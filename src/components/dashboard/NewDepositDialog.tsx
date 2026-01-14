@@ -1,0 +1,276 @@
+import { useState } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { Plus, Loader2, Upload, X } from "lucide-react";
+
+interface NewDepositDialogProps {
+  onSuccess: () => void;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  showTrigger?: boolean;
+}
+
+const NewDepositDialog = ({ onSuccess, open: controlledOpen, onOpenChange: setControlledOpen, showTrigger = true }: NewDepositDialogProps) => {
+  const [internalOpen, setInternalOpen] = useState(false);
+
+  const isControlled = controlledOpen !== undefined;
+  const open = isControlled ? controlledOpen : internalOpen;
+  const setOpen = isControlled ? setControlledOpen! : setInternalOpen;
+  const [amount, setAmount] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState("");
+  const [paymentProof, setPaymentProof] = useState<File | null>(null);
+  const [paymentProofUrl, setPaymentProofUrl] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const { user } = useAuth();
+  const { toast } = useToast();
+
+  const handleFileUpload = async (file: File) => {
+    if (!user) return;
+
+    // Validate file type
+    if (!file.type.startsWith("image/")) {
+      toast({
+        variant: "destructive",
+        title: "خطأ",
+        description: "يجب رفع ملف صورة فقط",
+      });
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (file.size > maxSize) {
+      toast({
+        variant: "destructive",
+        title: "خطأ",
+        description: "حجم الملف يجب أن يكون أقل من 5 ميجابايت",
+      });
+      return;
+    }
+
+    setIsUploading(true);
+    setPaymentProof(file);
+
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}/payment_proof_${Date.now()}.${fileExt}`;
+      const filePath = `deposits/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('images')
+        .upload(filePath, file);
+
+      if (uploadError) {
+        throw uploadError;
+      }
+
+      const { data } = supabase.storage
+        .from('images')
+        .getPublicUrl(filePath);
+
+      setPaymentProofUrl(data.publicUrl);
+      setIsUploading(false);
+    } catch (error: any) {
+      console.error('Error uploading file:', error);
+      toast({
+        variant: "destructive",
+        title: "خطأ",
+        description: error.message || "فشل رفع الملف",
+      });
+      setPaymentProof(null);
+      setIsUploading(false);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!amount || !paymentMethod || !paymentProofUrl) {
+      toast({
+        variant: "destructive",
+        title: "خطأ",
+        description: "يرجى ملء جميع الحقول ورفع إثبات الدفع",
+      });
+      return;
+    }
+
+    const amountNum = parseFloat(amount);
+    if (isNaN(amountNum) || amountNum < 2000) {
+      toast({
+        variant: "destructive",
+        title: "خطأ",
+        description: "الحد الأدنى للإيداع هو 2,000 ج.م",
+      });
+      return;
+    }
+
+    if (!user) {
+      toast({
+        variant: "destructive",
+        title: "خطأ",
+        description: "يجب تسجيل الدخول أولاً",
+      });
+      return;
+    }
+
+    setIsLoading(true);
+
+    const { error } = await supabase.from("deposits").insert({
+      user_id: user.id,
+      amount: amountNum,
+      payment_method: paymentMethod,
+      payment_proof_url: paymentProofUrl,
+    });
+
+    setIsLoading(false);
+
+    if (error) {
+      toast({
+        variant: "destructive",
+        title: "خطأ",
+        description: "حدث خطأ أثناء إرسال طلب الإيداع",
+      });
+    } else {
+      toast({
+        title: "تم إرسال الطلب",
+        description: "سيتم مراجعة طلبك في أقرب وقت",
+      });
+      setAmount("");
+      setPaymentMethod("");
+      setPaymentProof(null);
+      setPaymentProofUrl(null);
+      setOpen(false);
+      onSuccess();
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      {showTrigger && (
+        <DialogTrigger asChild>
+          <Button className="bg-gold-gradient hover:bg-gold-gradient-hover text-primary-foreground shadow-gold">
+            <Plus className="h-4 w-4 ml-2" />
+            إيداع جديد
+          </Button>
+        </DialogTrigger>
+      )}
+      <DialogContent className="bg-card border-border/50">
+        <DialogHeader>
+          <DialogTitle className="text-xl text-gold-gradient">طلب إيداع جديد</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4 mt-4">
+          <div className="space-y-2">
+            <Label htmlFor="amount">المبلغ (ج.م)</Label>
+            <Input
+              id="amount"
+              type="number"
+              min="2000"
+              placeholder="الحد الأدنى 2,000 ج.م"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              className="bg-secondary/30 border-border/50"
+              dir="ltr"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="paymentMethod">طريقة الدفع *</Label>
+            <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+              <SelectTrigger className="bg-secondary/30 border-border/50">
+                <SelectValue placeholder="اختر طريقة الدفع" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="vodafone_cash">فودافون كاش</SelectItem>
+                <SelectItem value="orange_cash">أورنج كاش</SelectItem>
+                <SelectItem value="etisalat_cash">اتصالات كاش</SelectItem>
+                <SelectItem value="we_pay">وي باي</SelectItem>
+                <SelectItem value="instapay">انستا باي</SelectItem>
+                <SelectItem value="bank_transfer">حساب بنكي</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="paymentProof">إثبات الدفع (صورة الإيصال) *</Label>
+            {paymentProofUrl ? (
+              <div className="relative">
+                <img
+                  src={paymentProofUrl}
+                  alt="Payment proof"
+                  className="w-full h-48 object-contain rounded-lg border border-primary/20"
+                />
+                <Button
+                  type="button"
+                  variant="destructive"
+                  size="sm"
+                  className="absolute top-2 left-2"
+                  onClick={() => {
+                    setPaymentProof(null);
+                    setPaymentProofUrl(null);
+                  }}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            ) : (
+              <div className="border-2 border-dashed border-primary/30 rounded-lg p-8 flex flex-col items-center justify-center bg-secondary/30 hover:bg-primary/5 transition-colors">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleFileUpload(file);
+                  }}
+                  className="hidden"
+                  id="paymentProof"
+                />
+                <label
+                  htmlFor="paymentProof"
+                  className="cursor-pointer flex flex-col items-center gap-2"
+                >
+                  {isUploading ? (
+                    <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                  ) : (
+                    <Upload className="w-8 h-8 text-muted-foreground" />
+                  )}
+                  <span className="text-sm text-muted-foreground">
+                    {isUploading ? "جاري الرفع..." : "اختر ملف إثبات الدفع"}
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    PNG, JPG, GIF حتى 5MB
+                  </span>
+                </label>
+              </div>
+            )}
+          </div>
+          <div className="bg-muted/50 p-4 rounded-lg text-sm text-muted-foreground">
+            <p>• سيتم مراجعة طلبك خلال 24-48 ساعة</p>
+            <p>• سعر الذهب عند الموافقة هو السعر المعتمد</p>
+            <p>• يرجى رفع صورة واضحة لإثبات الدفع</p>
+          </div>
+          <Button
+            type="submit"
+            className="w-full bg-gold-gradient hover:bg-gold-gradient-hover text-primary-foreground"
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+                جاري الإرسال...
+              </>
+            ) : (
+              "إرسال الطلب"
+            )}
+          </Button>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+export default NewDepositDialog;

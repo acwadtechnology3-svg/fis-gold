@@ -1,0 +1,222 @@
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 30 10% 6%;
+    --foreground: 30 10% 96%;
+    --card: 30 10% 10%;
+    --card-foreground: 30 10% 96%;
+    --popover: 30 10% 10%;
+    --popover-foreground: 30 10% 96%;
+    --primary: 42 85% 50%;
+    --primary-foreground: 30 10% 5%;
+    --secondary: 30 8% 18%;
+    --secondary-foreground: 30 10% 96%;
+    --muted: 30 8% 18%;
+    --muted-foreground: 30 10% 55%;
+    --accent: 42 85% 50%;
+    --accent-foreground: 30 10% 5%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 30 8% 20%;
+    --input: 30 8% 20%;
+    --ring: 42 85% 50%;
+    --radius: 1rem;
+    
+    /* Enhanced Gold Theme */
+    --gold: 42 85% 50%;
+    --gold-light: 45 90% 65%;
+    --gold-lighter: 48 95% 75%;
+    --gold-dark: 38 80% 40%;
+    --gold-darker: 35 75% 30%;
+    --gold-glow: 45 90% 55%;
+    --charcoal: 30 10% 8%;
+    --charcoal-light: 30 8% 18%;
+    --cream: 40 30% 96%;
+    
+    /* Sidebar */
+    --sidebar-background: 30 10% 10%;
+    --sidebar-foreground: 30 10% 96%;
+    --sidebar-primary: 42 85% 50%;
+    --sidebar-primary-foreground: 30 10% 5%;
+    --sidebar-accent: 30 8% 18%;
+    --sidebar-accent-foreground: 30 10% 96%;
+    --sidebar-border: 30 8% 20%;
+    --sidebar-ring: 42 85% 50%;
+  }
+
+  .dark {
+    --background: 30 10% 6%;
+    --foreground: 30 10% 96%;
+    --card: 30 10% 10%;
+    --card-foreground: 30 10% 96%;
+    --popover: 30 10% 10%;
+    --popover-foreground: 30 10% 96%;
+    --primary: 42 85% 55%;
+    --primary-foreground: 30 10% 5%;
+    --secondary: 30 8% 18%;
+    --secondary-foreground: 30 10% 96%;
+    --muted: 30 8% 18%;
+    --muted-foreground: 30 10% 55%;
+    --accent: 42 85% 55%;
+    --accent-foreground: 30 10% 5%;
+    --destructive: 0 62% 50%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 30 8% 20%;
+    --input: 30 8% 20%;
+    --ring: 42 85% 55%;
+    
+    --sidebar-background: 30 10% 10%;
+    --sidebar-foreground: 30 10% 96%;
+    --sidebar-primary: 42 85% 55%;
+    --sidebar-primary-foreground: 30 10% 5%;
+    --sidebar-accent: 30 8% 18%;
+    --sidebar-accent-foreground: 30 10% 96%;
+    --sidebar-border: 30 8% 20%;
+    --sidebar-ring: 42 85% 55%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  
+  html {
+    direction: rtl;
+    scroll-behavior: smooth;
+  }
+  
+  body {
+    @apply bg-background text-foreground font-cairo antialiased;
+  }
+}
+
+@layer utilities {
+  .text-gold-gradient {
+    background: linear-gradient(135deg, 
+      hsl(48 95% 75%) 0%, 
+      hsl(45 90% 60%) 25%, 
+      hsl(42 85% 50%) 50%, 
+      hsl(38 80% 45%) 75%, 
+      hsl(42 85% 55%) 100%
+    );
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  
+  .bg-gold-gradient {
+    background: linear-gradient(135deg, 
+      hsl(48 90% 60%) 0%, 
+      hsl(42 85% 50%) 50%, 
+      hsl(38 80% 45%) 100%
+    );
+  }
+  
+  .bg-gold-gradient-hover {
+    background: linear-gradient(135deg, 
+      hsl(48 90% 65%) 0%, 
+      hsl(42 85% 55%) 50%, 
+      hsl(38 80% 50%) 100%
+    );
+  }
+  
+  .bg-dark-gradient {
+    background: linear-gradient(180deg, 
+      hsl(30 10% 6%) 0%, 
+      hsl(30 10% 10%) 50%,
+      hsl(30 10% 8%) 100%
+    );
+  }
+  
+  .bg-hero-pattern {
+    background: 
+      radial-gradient(ellipse at 30% 20%, hsl(42 85% 50% / 0.15) 0%, transparent 50%),
+      radial-gradient(ellipse at 70% 80%, hsl(42 85% 50% / 0.1) 0%, transparent 50%),
+      linear-gradient(180deg, hsl(30 10% 6%) 0%, hsl(30 10% 10%) 100%);
+  }
+  
+  .shadow-gold {
+    box-shadow: 
+      0 4px 20px -5px hsl(42 85% 50% / 0.3),
+      0 8px 40px -10px hsl(42 85% 50% / 0.2);
+  }
+  
+  .shadow-gold-lg {
+    box-shadow: 
+      0 10px 40px -10px hsl(42 85% 50% / 0.4),
+      0 20px 60px -20px hsl(42 85% 50% / 0.3);
+  }
+  
+  .border-gold {
+    border-color: hsl(42 85% 50%);
+  }
+  
+  .glow-gold {
+    filter: drop-shadow(0 0 20px hsl(42 85% 50% / 0.4));
+  }
+  
+  .glass-card {
+    background: hsl(30 30% 99% / 0.8);
+    backdrop-filter: blur(20px);
+    border: 1px solid hsl(42 85% 50% / 0.2);
+  }
+  
+  .glass-dark {
+    background: hsl(30 10% 10% / 0.8);
+    backdrop-filter: blur(20px);
+    border: 1px solid hsl(42 85% 50% / 0.15);
+  }
+  
+  /* Animations */
+  @keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+  }
+  
+  @keyframes pulse-gold {
+    0%, 100% { opacity: 1; box-shadow: 0 0 20px hsl(42 85% 50% / 0.4); }
+    50% { opacity: 0.8; box-shadow: 0 0 40px hsl(42 85% 50% / 0.6); }
+  }
+  
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+  
+  @keyframes fade-up {
+    0% { opacity: 0; transform: translateY(20px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+  
+  .animate-float {
+    animation: float 4s ease-in-out infinite;
+  }
+  
+  .animate-pulse-gold {
+    animation: pulse-gold 2s ease-in-out infinite;
+  }
+  
+  .animate-shimmer {
+    background: linear-gradient(90deg, transparent, hsl(42 85% 50% / 0.3), transparent);
+    background-size: 200% 100%;
+    animation: shimmer 2s infinite;
+  }
+  
+  .animate-fade-up {
+    animation: fade-up 0.6s ease-out forwards;
+  }
+  
+  .hover-lift {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .hover-lift:hover {
+    transform: translateY(-5px);
+  }
+}
