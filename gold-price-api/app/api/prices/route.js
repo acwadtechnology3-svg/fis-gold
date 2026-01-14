@@ -43,8 +43,15 @@ export async function GET(request) {
                 gold: goldPrice
                     ? {
                         karat: goldPrice.karat,
+                        // Original gold-price-api naming
                         sell_price: goldPrice.sell_price,
                         buy_price: goldPrice.buy_price,
+                        // Trading convention aliases
+                        ask: goldPrice.sell_price,  // Customer buys at ask
+                        bid: goldPrice.buy_price,   // Customer sells at bid
+                        mid: (parseFloat(goldPrice.sell_price || 0) + parseFloat(goldPrice.buy_price || 0)) / 2,
+                        spread: parseFloat(goldPrice.sell_price || 0) - parseFloat(goldPrice.buy_price || 0),
+                        // Market data
                         opening_price: goldPrice.opening_price,
                         change_value: goldPrice.change_value,
                         change_percent: goldPrice.change_percent,
@@ -56,8 +63,13 @@ export async function GET(request) {
                     ? {
                         price_per_gram: silverPrice.price_per_gram,
                         price_per_ounce: silverPrice.price_per_ounce,
-                        sell_price: silverPrice.sell_price,
-                        buy_price: silverPrice.buy_price,
+                        // Original gold-price-api naming
+                        sell_price: silverPrice.sell_price || silverPrice.price_per_gram,
+                        buy_price: silverPrice.buy_price || silverPrice.price_per_gram * 0.99,
+                        // Trading convention aliases
+                        ask: silverPrice.sell_price || silverPrice.price_per_gram,
+                        bid: silverPrice.buy_price || parseFloat(silverPrice.price_per_gram || 0) * 0.99,
+                        mid: silverPrice.price_per_gram,
                         currency: silverPrice.currency,
                         updated_at: silverPrice.created_at,
                     }

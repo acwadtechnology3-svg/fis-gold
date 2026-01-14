@@ -102,22 +102,29 @@ npm run dev
 curl http://localhost:3000/api/cron/update-prices
 ```
 
-## Vercel Cron Configuration
+## Cron Job Setup with cron-job.org
 
-The `vercel.json` file configures the cron job:
+Since Vercel's free plan only allows daily cron jobs, we use [cron-job.org](https://cron-job.org) for 1-minute price updates.
 
-```json
-{
-  "crons": [
-    {
-      "path": "/api/cron/update-prices",
-      "schedule": "* * * * *"
-    }
-  ]
-}
-```
+### Setup Steps:
 
-**Note:** Vercel Cron requires a Pro or Enterprise plan for 1-minute intervals on the free plan, crons run at most once per day. Consider upgrading or using an external cron service like [cron-job.org](https://cron-job.org).
+1. **Create an account** at [console.cron-job.org](https://console.cron-job.org)
+
+2. **Create a new cron job** with these settings:
+   - **Title**: `Update Gold Prices`
+   - **URL**: `https://YOUR-VERCEL-URL.vercel.app/api/cron/update-prices`
+   - **Schedule**: Every 1 minute (`*/1 * * * *`)
+   - **Method**: GET
+   - **Timeout**: 30 seconds
+
+3. **Add Authorization Header** (if CRON_SECRET is set):
+   - **Header Name**: `Authorization`
+   - **Header Value**: `Bearer YOUR_CRON_SECRET`
+
+4. **Test the job** by clicking "Run now" in the dashboard
+
+### Cron Job Console URL
+[https://console.cron-job.org/jobs](https://console.cron-job.org/jobs)
 
 ## Tech Stack
 
