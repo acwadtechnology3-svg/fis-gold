@@ -1,8 +1,19 @@
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Sparkles, Shield, TrendingUp } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import logo from "@/assets/logo.png";
 
 const HeroSection = () => {
+  const navigate = useNavigate();
+
+  const handleStartInvesting = () => {
+    navigate('/auth');
+  };
+
+  const handleViewPackages = () => {
+    document.getElementById('cta')?.scrollIntoView({ behavior: 'smooth' });
+  };
+
   return (
     <section id="home" className="relative min-h-screen flex items-center justify-center pt-24 pb-16 overflow-hidden">
       {/* Enhanced Background */}
@@ -78,6 +89,7 @@ const HeroSection = () => {
           >
             <Button
               size="lg"
+              onClick={handleStartInvesting}
               className="bg-gold-gradient text-secondary font-black text-lg px-10 py-7 shadow-gold-lg hover:shadow-gold transition-all duration-300 hover:-translate-y-1 group w-full sm:w-auto"
             >
               <span>ابدأ الاستثمار الآن</span>
@@ -86,6 +98,7 @@ const HeroSection = () => {
             <Button
               size="lg"
               variant="outline"
+              onClick={handleViewPackages}
               className="border-2 border-primary/50 text-primary hover:bg-primary/10 hover:border-primary font-bold text-lg px-10 py-7 transition-all duration-300 w-full sm:w-auto"
             >
               تعرّف على الباقات

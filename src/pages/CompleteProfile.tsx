@@ -44,7 +44,7 @@ const CompleteProfile = () => {
         const { data: profile, error } = await supabase
           .from('profiles')
           .select('is_active, phone, first_name, last_name')
-          .eq('user_id', user.id)
+          .eq('id', user.id)
           .single();
 
         if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
@@ -159,7 +159,7 @@ const CompleteProfile = () => {
       const { error } = await supabase
         .from('profiles')
         .update(updateData)
-        .eq('user_id', user.id);
+        .eq('id', user.id);
 
       if (error) throw error;
 
