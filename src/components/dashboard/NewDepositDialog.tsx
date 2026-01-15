@@ -122,20 +122,23 @@ const NewDepositDialog = ({ onSuccess, open: controlledOpen, onOpenChange: setCo
 
     setIsLoading(true);
 
-    const { error } = await supabase.from("deposits").insert({
+    const { error } = await supabase.from("deposits" as any).insert({
       user_id: user.id,
       amount: amountNum,
       payment_method: paymentMethod,
+      provider: 'manual', // Mark as manual deposit
       payment_proof_url: paymentProofUrl,
+      idempotency_key: crypto.randomUUID(), // Required by schema
     });
 
     setIsLoading(false);
 
     if (error) {
+      console.error('Deposit error:', error);
       toast({
         variant: "destructive",
         title: "خطأ",
-        description: "حدث خطأ أثناء إرسال طلب الإيداع",
+        description: error.message || "حدث خطأ أثناء إرسال طلب الإيداع",
       });
     } else {
       toast({
@@ -161,9 +164,12 @@ const NewDepositDialog = ({ onSuccess, open: controlledOpen, onOpenChange: setCo
           </Button>
         </DialogTrigger>
       )}
-      <DialogContent className="bg-card border-border/50">
+      <DialogContent className="bg-card border-border/50" aria-describedby="deposit-dialog-desc">
         <DialogHeader>
           <DialogTitle className="text-xl text-gold-gradient">طلب إيداع جديد</DialogTitle>
+          <p id="deposit-dialog-desc" className="text-sm text-muted-foreground">
+            قم بإدخال تفاصيل الإيداع ورفع إيصال الدفع.
+          </p>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 mt-4">
           <div className="space-y-2">

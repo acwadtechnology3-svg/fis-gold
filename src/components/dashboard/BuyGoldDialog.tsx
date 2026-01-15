@@ -34,11 +34,11 @@ const BuyGoldDialog = ({ open, onOpenChange, onSuccess }: BuyGoldDialogProps) =>
         const fetchBalance = async () => {
             if (!user) return;
             const { data } = await supabase
-                .from('wallet_accounts')
+                .from('wallet_accounts' as any)
                 .select('available_balance')
                 .eq('user_id', user.id)
                 .maybeSingle();
-            if (data) setWalletBalance(data.available_balance);
+            if (data) setWalletBalance((data as any).available_balance);
         };
         fetchBalance();
     }, [user, open]);
@@ -100,7 +100,7 @@ const BuyGoldDialog = ({ open, onOpenChange, onSuccess }: BuyGoldDialogProps) =>
                     action: 'buy_gold',
                     amount: parseFloat(amount),
                     duration_days: duration,
-                    snapshot_id: snapshot.id,
+                    snapshot_id: (snapshot as any).id,
                     idempotency_key: crypto.randomUUID()
                 }
             });
@@ -134,9 +134,10 @@ const BuyGoldDialog = ({ open, onOpenChange, onSuccess }: BuyGoldDialogProps) =>
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="bg-card border-border/50 sm:max-w-[425px]">
+            <DialogContent className="bg-card border-border/50 sm:max-w-[425px]" aria-describedby="buy-gold-desc">
                 <DialogHeader>
                     <DialogTitle className="text-xl text-gold-gradient text-center">شراء ذهب</DialogTitle>
+                    <p id="buy-gold-desc" className="sr-only">استخدم رصيد محفظتك لشراء الذهب</p>
                 </DialogHeader>
 
                 <form onSubmit={handleSubmit} className="space-y-6 mt-4">
