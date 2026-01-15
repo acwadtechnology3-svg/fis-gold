@@ -32,7 +32,7 @@ const CompleteProfile = () => {
     if (user?.email) {
       setEmail(user.email);
     }
-    
+
     // Check if profile already exists and is complete
     const checkProfile = async () => {
       if (!user) {
@@ -56,7 +56,7 @@ const CompleteProfile = () => {
         if (profile) {
           // Check if profile is complete (has required fields)
           const isComplete = profile.phone && profile.first_name && profile.last_name;
-          
+
           if (isComplete && !profile.is_active) {
             // Profile is complete but not active (pending verification)
             setProfileSubmitted(true);
@@ -65,7 +65,7 @@ const CompleteProfile = () => {
             navigate('/dashboard');
             return;
           }
-          
+
           // Load existing data if profile exists but incomplete
           if (profile.first_name) setFirstName(profile.first_name);
           if (profile.last_name) setLastName(profile.last_name);
@@ -321,16 +321,16 @@ const CompleteProfile = () => {
 
               {/* Contact */}
               <div className="space-y-2 md:col-span-2">
-                <Label htmlFor="email">البريد الإلكتروني *</Label>
+                <Label htmlFor="email">البريد الإلكتروني</Label>
                 <Input
                   id="email"
                   type="email"
                   placeholder="example@email.com"
-                  required
                   className="bg-background/50 text-left"
                   dir="ltr"
                   value={email}
-                  disabled // Email usually comes from auth and shouldn't be changed here easily
+                  onChange={(e) => setEmail(e.target.value)}
+                  disabled={!!user?.email} // Only disable if email already exists from auth
                 />
               </div>
               <div className="space-y-2 md:col-span-2">
