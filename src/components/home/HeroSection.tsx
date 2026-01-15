@@ -1,17 +1,23 @@
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Sparkles, Shield, TrendingUp } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 import logo from "@/assets/logo.png";
 
 const HeroSection = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const handleStartInvesting = () => {
-    navigate('/auth');
+    if (user) {
+      navigate('/dashboard');
+    } else {
+      navigate('/auth');
+    }
   };
 
   const handleViewPackages = () => {
-    document.getElementById('cta')?.scrollIntoView({ behavior: 'smooth' });
+    navigate('/investment-plans');
   };
 
   return (

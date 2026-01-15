@@ -27,6 +27,7 @@ import GoldsmithProductsPage from "./pages/GoldsmithProductsPage";
 import Store from "./pages/Store";
 import GoldInvestmentCalculator from "./pages/GoldInvestmentCalculator";
 import NotFound from "./pages/NotFound";
+import InvestmentPlans from "./pages/InvestmentPlans";
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -41,6 +42,7 @@ const App = () => (
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/packages" element={<Packages />} />
+              <Route path="/investment-plans" element={<InvestmentPlans />} />
               <Route path="/how-it-works" element={<HowItWorks />} />
               <Route path="/why-us" element={<WhyUs />} />
               <Route path="/about" element={<About />} />
