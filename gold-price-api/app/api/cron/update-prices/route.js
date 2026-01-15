@@ -19,17 +19,6 @@ export const maxDuration = 30;
  */
 export async function GET(request) {
     try {
-        // Verify cron secret (optional but recommended)
-        const authHeader = request.headers.get("authorization");
-        const cronSecret = process.env.CRON_SECRET;
-
-        if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
-            return NextResponse.json(
-                { success: false, error: "Unauthorized" },
-                { status: 401 }
-            );
-        }
-
         const results = {
             gold: null,
             silver: null,

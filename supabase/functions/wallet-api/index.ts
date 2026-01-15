@@ -730,6 +730,27 @@ async function handleBuyGold(req: Request): Promise<Response> {
     if (!duration_days || duration_days <= 0) return errorResponse("Invalid duration");
     if (!amount && !grams) return errorResponse("Amount or grams required");
 
+    // Get minimum investment from admin settings (default 0)
+    let minInvestment = 0;
+    const { data: minSetting } = await supabase
+        .from("investment_settings")
+        .select("setting_value")
+        .eq("setting_key", "minimum_investment")
+        .eq("is_active", true)
+        .single();
+
+    if (minSetting?.setting_value?.amount) {
+        minInvestment = Number(minSetting.setting_value.amount);
+    }
+
+    // Calculate the buy amount first for validation
+    let preliminaryAmount = amount ? Number(amount) : 0;
+
+    // Check minimum investment (if set > 0)
+    if (minInvestment > 0 && preliminaryAmount > 0 && preliminaryAmount < minInvestment) {
+        return errorResponse(`Minimum investment is ${minInvestment} EGP`);
+    }
+
     // Verify snapshot is valid and not expired
     const { data: snapshot, error: snapshotError } = await supabase
         .from("gold_price_snapshots")
@@ -915,22 +936,22 @@ async function handleWithdrawRequest(req: Request): Promise<Response> {
             return errorResponse("Position still locked. Use forced withdrawal.", 400);
         }
 
-        // Get current price for selling
+        // Get current price for selling (user sells at buy_price/bid)
         const { data: currentPrice } = await supabase
             .from("gold_prices")
-            .select("bid")
-            .eq("metal_type", position.metal_type)
-            .order("effective_at", { ascending: false })
+            .select("buy_price, sell_price")
+            .eq("karat", "24")
+            .order("created_at", { ascending: false })
             .limit(1)
             .single();
 
-        if (!currentPrice) {
+        if (!currentPrice || !currentPrice.buy_price) {
             return errorResponse("Price unavailable", 503);
         }
 
-        // Calculate sale value (user sells at bid price)
-        withdrawAmount = Number(position.grams) * Number(currentPrice.bid);
-        positionToClose = { ...position, close_price_bid: currentPrice.bid };
+        // Calculate sale value (user sells at buy_price = bid)
+        withdrawAmount = Number(position.grams) * Number(currentPrice.buy_price);
+        positionToClose = { ...position, close_price_bid: currentPrice.buy_price };
 
     } else if (amount) {
         withdrawAmount = Number(amount);
@@ -956,32 +977,10 @@ async function handleWithdrawRequest(req: Request): Promise<Response> {
         await sha256(JSON.stringify(body)),
         async (walletLock) => {
             let balanceToDeduct: number;
+            let ledgerEntry: any;
+            let balanceChanges: any;
 
-            if (positionToClose) {
-                // Close position and unlock funds
-                balanceToDeduct = Number(positionToClose.buy_amount);
-
-                // Update position
-                await supabase
-                    .from("gold_positions")
-                    .update({
-                        status: "closed",
-                        close_time: new Date().toISOString(),
-                        close_price_bid: positionToClose.close_price_bid,
-                        close_amount: withdrawAmount,
-                        profit_loss: withdrawAmount - positionToClose.buy_amount
-                    })
-                    .eq("id", position_id);
-
-            } else {
-                // Direct withdrawal from available
-                balanceToDeduct = withdrawAmount;
-                if (Number(walletLock.available_balance) < balanceToDeduct) {
-                    throw new Error("Insufficient balance");
-                }
-            }
-
-            // Create withdrawal record
+            // Create withdrawal record first
             const { data: withdrawal, error: withdrawError } = await supabase
                 .from("withdrawals")
                 .insert({
@@ -1002,24 +1001,44 @@ async function handleWithdrawRequest(req: Request): Promise<Response> {
                 throw new Error(`Failed to create withdrawal: ${withdrawError.message}`);
             }
 
-            let ledgerEntry;
-            let balanceChanges;
-
             if (positionToClose) {
-                // Unlock and debit
+                // Close position: unlock funds and credit sale proceeds to available
+                balanceToDeduct = Number(positionToClose.buy_amount);
+                const saleProceeds = withdrawAmount; // Current value at market price
+
+                // Update position
+                await supabase
+                    .from("gold_positions")
+                    .update({
+                        status: "closed",
+                        close_time: new Date().toISOString(),
+                        close_price_bid: positionToClose.close_price_bid,
+                        close_amount: withdrawAmount,
+                        profit_loss: withdrawAmount - positionToClose.buy_amount
+                    })
+                    .eq("id", position_id);
+
+                // Ledger entry for unlocking and crediting sale proceeds
                 ledgerEntry = {
                     event_type: "position_unlock",
                     direction: "debit",
-                    amount: netAmount,
+                    amount: balanceToDeduct,
                     currency: "EGP",
                     balance_type: "locked",
                     balance_after: Number(walletLock.locked_balance) - balanceToDeduct,
                     related_table: "withdrawals",
                     related_id: withdrawal.id,
-                    description: `Normal withdrawal from position`
+                    description: `Normal withdrawal from position - proceeds: ${saleProceeds.toFixed(2)} EGP`
                 };
-                balanceChanges = { locked: -balanceToDeduct };
+                // Debit locked, credit available with sale proceeds
+                balanceChanges = { locked: -balanceToDeduct, available: saleProceeds };
             } else {
+                // Direct withdrawal from available balance
+                balanceToDeduct = withdrawAmount;
+                if (Number(walletLock.available_balance) < balanceToDeduct) {
+                    throw new Error("Insufficient balance");
+                }
+
                 ledgerEntry = {
                     event_type: "withdrawal_debit",
                     direction: "debit",
@@ -1109,21 +1128,21 @@ async function handleForcedWithdrawRequest(req: Request): Promise<Response> {
         return errorResponse("Position is matured. Use normal withdrawal.", 400);
     }
 
-    // Get current price
+    // Get current price (user sells at buy_price/bid)
     const { data: currentPrice } = await supabase
         .from("gold_prices")
-        .select("bid")
-        .eq("metal_type", position.metal_type)
-        .order("effective_at", { ascending: false })
+        .select("buy_price, sell_price")
+        .eq("karat", "24")
+        .order("created_at", { ascending: false })
         .limit(1)
         .single();
 
-    if (!currentPrice) {
+    if (!currentPrice || !currentPrice.buy_price) {
         return errorResponse("Price unavailable", 503);
     }
 
-    // Calculate value
-    const grossAmount = Number(position.grams) * Number(currentPrice.bid);
+    // Calculate value (user sells at buy_price = bid)
+    const grossAmount = Number(position.grams) * Number(currentPrice.buy_price);
 
     // Calculate fee
     const { data: feeResult } = await supabase
@@ -1189,6 +1208,7 @@ async function handleForcedWithdrawRequest(req: Request): Promise<Response> {
                 throw new Error(`Failed to create withdrawal: ${withdrawError.message}`);
             }
 
+            // For forced withdrawal: unlock from locked and credit net amount to available
             return {
                 ledgerEntry: {
                     event_type: "position_unlock",
@@ -1207,7 +1227,8 @@ async function handleForcedWithdrawRequest(req: Request): Promise<Response> {
                         days_remaining: daysRemaining
                     }
                 },
-                balanceChanges: { locked: -lockedAmount },
+                // Credit net amount (after penalty) to available balance
+                balanceChanges: { locked: -lockedAmount, available: netAmount },
                 result: {
                     withdrawal_id: withdrawal.id,
                     position_id,
