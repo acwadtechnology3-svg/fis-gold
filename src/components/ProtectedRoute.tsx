@@ -25,7 +25,7 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
         const { data: profile, error } = await supabase
           .from("profiles")
           .select("is_active, phone, first_name, last_name")
-          .eq("user_id", user.id)
+          .eq("id", user.id)
           .single();
 
         if (error) {
@@ -36,7 +36,7 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
 
         // Check if profile is complete (has required fields)
         const isComplete = !!(profile?.phone && profile?.first_name && profile?.last_name);
-        
+
         // User can access if profile is active AND complete
         setIsProfileActive(profile?.is_active === true && isComplete === true);
         setProfileLoading(false);
