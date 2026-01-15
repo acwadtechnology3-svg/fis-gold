@@ -9,6 +9,7 @@ import DepositsTable from "@/components/dashboard/DepositsTable";
 import WithdrawalsTable from "@/components/dashboard/WithdrawalsTable";
 import NewDepositDialog from "@/components/dashboard/NewDepositDialog";
 import NewWithdrawalDialog from "@/components/dashboard/NewWithdrawalDialog";
+import BuyGoldDialog from "@/components/dashboard/BuyGoldDialog";
 import TermsDialog from "@/components/dashboard/TermsDialog";
 import GoldParticles from "@/components/GoldParticles";
 import { Button } from "@/components/ui/button";
@@ -21,6 +22,7 @@ const Dashboard = () => {
 
   const [termsOpen, setTermsOpen] = useState(false);
   const [depositOpen, setDepositOpen] = useState(false);
+  const [buyGoldOpen, setBuyGoldOpen] = useState(false);
   const [withdrawalOpen, setWithdrawalOpen] = useState(false);
   const [actionType, setActionType] = useState<"buy" | "sell">("buy");
 
@@ -37,7 +39,7 @@ const Dashboard = () => {
   const handleTermsAccept = () => {
     setTermsOpen(false);
     if (actionType === "buy") {
-      setDepositOpen(true);
+      setBuyGoldOpen(true);
     } else {
       setWithdrawalOpen(true);
     }
@@ -79,6 +81,10 @@ const Dashboard = () => {
           </div>
 
           <div className="flex gap-2">
+            <Button onClick={() => setDepositOpen(true)} variant="outline" className="border-primary text-primary hover:bg-primary/10">
+              <Plus className="h-4 w-4 ml-2" />
+              شحن المحفظة
+            </Button>
             <Button onClick={handleBuyClick} className="bg-gold-gradient hover:bg-gold-gradient-hover text-black shadow-gold font-bold transition-all hover:scale-105">
               <Plus className="h-4 w-4 ml-2" />
               شراء ذهب
@@ -100,6 +106,11 @@ const Dashboard = () => {
             onOpenChange={setDepositOpen}
             onSuccess={refetchAll}
             showTrigger={false}
+          />
+          <BuyGoldDialog
+            open={buyGoldOpen}
+            onOpenChange={setBuyGoldOpen}
+            onSuccess={refetchAll}
           />
           <NewWithdrawalDialog
             open={withdrawalOpen}

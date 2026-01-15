@@ -21,38 +21,36 @@ SECURITY DEFINER
 AS $$
 BEGIN
   RETURN QUERY
-  -- Gold (24K)
-  SELECT 
+  (SELECT 
     'gold'::TEXT as metal_type,
-    buy_price as price_per_gram, -- Use buy price as base
-    buy_price as buy_price_per_gram,
-    sell_price as sell_price_per_gram,
-    (buy_price * 31.1035) as price_per_ounce,
-    (buy_price * 31.1035) as buy_price_per_ounce,
-    (sell_price * 31.1035) as sell_price_per_ounce,
-    source::TEXT,
-    created_at as updated_at
-  FROM gold_prices
-  WHERE karat = '24'
-  ORDER BY created_at DESC
-  LIMIT 1
+    g.buy_price as price_per_gram,
+    g.buy_price as buy_price_per_gram,
+    g.sell_price as sell_price_per_gram,
+    (g.buy_price * 31.1035) as price_per_ounce,
+    (g.buy_price * 31.1035) as buy_price_per_ounce,
+    (g.sell_price * 31.1035) as sell_price_per_ounce,
+    g.source::TEXT,
+    g.created_at as updated_at
+  FROM gold_prices g
+  WHERE g.karat = '24'
+  ORDER BY g.created_at DESC
+  LIMIT 1)
   
   UNION ALL
   
-  -- Silver
-  SELECT 
+  (SELECT 
     'silver'::TEXT as metal_type,
-    price_per_gram,
-    COALESCE(buy_price, price_per_gram) as buy_price_per_gram,
-    COALESCE(sell_price, price_per_gram) as sell_price_per_gram,
-    price_per_ounce,
-    price_per_ounce as buy_price_per_ounce,
-    price_per_ounce as sell_price_per_ounce,
-    source::TEXT,
-    created_at as updated_at
-  FROM silver_prices
-  ORDER BY created_at DESC
-  LIMIT 1;
+    s.price_per_gram,
+    COALESCE(s.buy_price, s.price_per_gram) as buy_price_per_gram,
+    COALESCE(s.sell_price, s.price_per_gram) as sell_price_per_gram,
+    s.price_per_ounce,
+    s.price_per_ounce as buy_price_per_ounce,
+    s.price_per_ounce as sell_price_per_ounce,
+    s.source::TEXT,
+    s.created_at as updated_at
+  FROM silver_prices s
+  ORDER BY s.created_at DESC
+  LIMIT 1);
 END;
 $$;
 
