@@ -37,13 +37,14 @@ export const useActivityLog = () => {
     const userIds = [...new Set(data?.map((a) => a.user_id) || [])];
     const { data: profiles } = await supabase
       .from("profiles")
-      .select("user_id, full_name")
-      .in("user_id", userIds);
+      .select("id, full_name")
+      .in("id", userIds);
 
     const activitiesWithNames = data?.map((activity) => {
-      const profile = profiles?.find((p) => p.user_id === activity.user_id);
+      const profile = profiles?.find((p) => p.id === activity.user_id);
       return {
         ...activity,
+        metadata: activity.metadata as any,
         user_name: profile?.full_name || "غير معروف",
       };
     });

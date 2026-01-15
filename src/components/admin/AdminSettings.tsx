@@ -5,12 +5,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useSystemSettings } from "@/hooks/useSystemSettings";
-import { toast } from "sonner";
+import { useAdminData } from "@/hooks/useAdminData";
 import { Settings, Save, Loader2 } from "lucide-react";
 import { useActivityLog } from "@/hooks/useActivityLog";
 
 export const AdminSettings = () => {
   const { settings, loading, updateSetting, getSetting } = useSystemSettings();
+  const { feeRules, updateFeeRule } = useAdminData();
   const { logActivity } = useActivityLog();
   const [saving, setSaving] = useState<string | null>(null);
 
@@ -24,6 +25,24 @@ export const AdminSettings = () => {
         null,
         `تم تحديث الإعداد: ${key}`,
         { key, value }
+      );
+    }
+    setSaving(null);
+  };
+
+  const handleUpdateFeeRule = async (feeType: string, percentageValue: number) => {
+    setSaving(feeType);
+    // Convert percentage (e.g. 10) to decimal (0.10)
+    const decimalValue = percentageValue / 100;
+    const success = await updateFeeRule(feeType, decimalValue);
+
+    if (success) {
+      await logActivity(
+        "setting_updated",
+        "fee_rule",
+        null,
+        `تم تحديث نسبة رسوم السحب المبكر إلى: ${percentageValue}%`,
+        { feeType, value: decimalValue }
       );
     }
     setSaving(null);
@@ -52,17 +71,18 @@ export const AdminSettings = () => {
       <CardContent className="space-y-6">
         {/* Withdrawal Fee */}
         <div className="space-y-2">
-          <Label htmlFor="withdrawal_fee">نسبة رسوم السحب (%)</Label>
+          <Label htmlFor="withdrawal_fee">نسبة رسوم السحب المبكر (كسر الوديعة) (%)</Label>
           <div className="flex gap-2">
             <Input
               id="withdrawal_fee"
               type="number"
               step="0.1"
-              defaultValue={getSetting("withdrawal_fee_percentage") || 2.5}
+              // Convert decimal (0.10) to percentage (10) for display. Default 10%
+              defaultValue={((feeRules["forced_withdrawal"] || 0.10) * 100).toFixed(1)}
               onBlur={(e) => {
                 const value = parseFloat(e.target.value);
                 if (!isNaN(value) && value >= 0) {
-                  handleUpdateSetting("withdrawal_fee_percentage", value);
+                  handleUpdateFeeRule("forced_withdrawal", value);
                 }
               }}
             />
@@ -73,12 +93,12 @@ export const AdminSettings = () => {
                 const input = document.getElementById("withdrawal_fee") as HTMLInputElement;
                 const value = parseFloat(input.value);
                 if (!isNaN(value) && value >= 0) {
-                  handleUpdateSetting("withdrawal_fee_percentage", value);
+                  handleUpdateFeeRule("forced_withdrawal", value);
                 }
               }}
-              disabled={saving === "withdrawal_fee_percentage"}
+              disabled={saving === "forced_withdrawal"}
             >
-              {saving === "withdrawal_fee_percentage" ? (
+              {saving === "forced_withdrawal" ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
                 <Save className="w-4 h-4" />

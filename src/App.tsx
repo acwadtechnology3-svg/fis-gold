@@ -16,6 +16,7 @@ import WhyUs from "./pages/WhyUs";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
 import Auth from "./pages/Auth";
+import ResetPassword from "./pages/ResetPassword";
 import CompleteProfile from "./pages/CompleteProfile";
 import Dashboard from "./pages/Dashboard";
 import Deposit from "./pages/Deposit";
@@ -48,6 +49,7 @@ const App = () => (
               <Route path="/about" element={<About />} />
               <Route path="/contact" element={<Contact />} />
               <Route path="/auth" element={<Auth />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/complete-profile" element={<CompleteProfile />} />
               <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
               <Route path="/deposit" element={<ProtectedRoute><Deposit /></ProtectedRoute>} />

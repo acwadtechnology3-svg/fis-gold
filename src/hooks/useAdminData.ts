@@ -19,15 +19,16 @@ export interface AdminDeposit {
   amount: number;
   package_type: string;
   payment_method: string | null;
+  payment_proof_url: string | null;
   gold_grams: number | null;
   gold_price_at_deposit: number | null;
   status: string;
   notes: string | null;
-  payment_proof_url: string | null;
   created_at: string;
   approved_at: string | null;
   user_email?: string;
   user_name?: string;
+  provider?: string; // Added
 }
 
 export interface AdminWithdrawal {
@@ -36,7 +37,7 @@ export interface AdminWithdrawal {
   deposit_id: string | null;
   amount: number;
   withdrawal_type: string;
-  grams: number | null;
+  grams?: number | null; // Made optional
   gold_price_at_withdrawal: number | null;
   fee_percentage: number | null;
   fee_amount: number | null;
@@ -55,7 +56,9 @@ export const useAdminData = () => {
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState<UserWithProfile[]>([]);
   const [deposits, setDeposits] = useState<AdminDeposit[]>([]);
+
   const [withdrawals, setWithdrawals] = useState<AdminWithdrawal[]>([]);
+  const [feeRules, setFeeRules] = useState<Record<string, number>>({});
 
   const checkAdminRole = async () => {
     if (!user) {
@@ -82,7 +85,7 @@ export const useAdminData = () => {
 
   const fetchUsers = async () => {
     const userIds: string[] = [];
-    
+
     // Fetch profiles and roles in parallel
     const [profilesResult, rolesResult] = await Promise.all([
       supabase
@@ -112,13 +115,13 @@ export const useAdminData = () => {
     });
 
     const usersData: UserWithProfile[] = profiles.map((profile) => ({
-      id: profile.user_id,
+      id: profile.id,
       email: profile.email || "",
       created_at: profile.created_at,
       full_name: profile.full_name,
       phone: profile.phone,
       is_active: profile.is_active ?? true,
-      roles: rolesByUserId.get(profile.user_id) || [],
+      roles: rolesByUserId.get(profile.id) || [],
     }));
 
     setUsers(usersData);
@@ -133,7 +136,7 @@ export const useAdminData = () => {
         .order("created_at", { ascending: false }),
       supabase
         .from("profiles")
-        .select("user_id, full_name")
+        .select("id, full_name")
     ]);
 
     if (depositsResult.error) {
@@ -141,11 +144,11 @@ export const useAdminData = () => {
       return;
     }
 
-    const data = depositsResult.data || [];
+    const data = (depositsResult.data || []) as any[];
     const profiles = profilesResult.data || [];
 
     // Create map for faster lookup
-    const profilesMap = new Map(profiles.map((p) => [p.user_id, p.full_name]));
+    const profilesMap = new Map(profiles.map((p) => [p.id, p.full_name]));
 
     const depositsWithUsers = data.map((deposit) => ({
       ...deposit,
@@ -164,7 +167,7 @@ export const useAdminData = () => {
         .order("created_at", { ascending: false }),
       supabase
         .from("profiles")
-        .select("user_id, full_name")
+        .select("id, full_name")
     ]);
 
     if (withdrawalsResult.error) {
@@ -172,11 +175,11 @@ export const useAdminData = () => {
       return;
     }
 
-    const data = withdrawalsResult.data || [];
+    const data = (withdrawalsResult.data || []) as any[];
     const profiles = profilesResult.data || [];
 
     // Create map for faster lookup
-    const profilesMap = new Map(profiles.map((p) => [p.user_id, p.full_name]));
+    const profilesMap = new Map(profiles.map((p) => [p.id, p.full_name]));
 
     const withdrawalsWithUsers = data.map((withdrawal) => ({
       ...withdrawal,
@@ -186,9 +189,41 @@ export const useAdminData = () => {
     setWithdrawals(withdrawalsWithUsers);
   };
 
+  const fetchFeeRules = async () => {
+    const { data, error } = await (supabase
+      .from("fee_rules" as any) as any)
+      .select("fee_type, fee_percent");
+
+    if (error) {
+      console.error("Error fetching fee rules:", error);
+      return;
+    }
+
+    const rules: Record<string, number> = {};
+    data.forEach((rule: any) => {
+      rules[rule.fee_type] = rule.fee_percent;
+    });
+    setFeeRules(rules);
+  };
+
+  const updateFeeRule = async (feeType: string, feePercent: number) => {
+    const { error } = await (supabase
+      .from("fee_rules" as any) as any)
+      .upsert({ fee_type: feeType, fee_percent: feePercent }, { onConflict: "fee_type" });
+
+    if (error) {
+      toast.error("حدث خطأ في تحديث نسبة الرسوم");
+      return false;
+    }
+
+    toast.success("تم تحديث نسبة الرسوم بنجاح");
+    fetchFeeRules();
+    return true;
+  };
+
   const approveDeposit = async (depositId: string, goldGrams: number, goldPrice: number) => {
     const deposit = deposits.find((d) => d.id === depositId);
-    
+
     const { error } = await supabase
       .from("deposits")
       .update({
@@ -220,7 +255,7 @@ export const useAdminData = () => {
 
   const rejectDeposit = async (depositId: string, notes: string) => {
     const deposit = deposits.find((d) => d.id === depositId);
-    
+
     const { error } = await supabase
       .from("deposits")
       .update({
@@ -250,7 +285,7 @@ export const useAdminData = () => {
 
   const approveWithdrawal = async (withdrawalId: string) => {
     const withdrawal = withdrawals.find((w) => w.id === withdrawalId);
-    
+
     const { error } = await supabase
       .from("withdrawals")
       .update({
@@ -280,7 +315,7 @@ export const useAdminData = () => {
 
   const rejectWithdrawal = async (withdrawalId: string, notes: string) => {
     const withdrawal = withdrawals.find((w) => w.id === withdrawalId);
-    
+
     const { error } = await supabase
       .from("withdrawals")
       .update({
@@ -314,8 +349,8 @@ export const useAdminData = () => {
 
   useEffect(() => {
     if (isAdmin) {
-      // Fetch all data in parallel for better performance
-      Promise.all([fetchUsers(), fetchDeposits(), fetchWithdrawals()]);
+      // Fetch all data in parallel
+      Promise.all([fetchUsers(), fetchDeposits(), fetchWithdrawals(), fetchFeeRules()]);
     }
   }, [isAdmin]);
 
@@ -326,7 +361,7 @@ export const useAdminData = () => {
     const { error } = await supabase
       .from("profiles")
       .update(updates)
-      .eq("user_id", userId);
+      .eq("id", userId);
 
     if (error) {
       toast.error("حدث خطأ في تحديث بيانات المستخدم");
@@ -400,5 +435,7 @@ export const useAdminData = () => {
     grantUserRole,
     revokeUserRole,
     getUserPortfolio,
+    feeRules,
+    updateFeeRule,
   };
 };

@@ -13,6 +13,14 @@ import { Mail, Lock, User, Loader2, Store } from "lucide-react";
 import { Link } from "react-router-dom";
 import logo from "@/assets/logo.png";
 
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+
 const Auth = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [loginEmail, setLoginEmail] = useState("");
@@ -20,9 +28,51 @@ const Auth = () => {
   const [signupEmail, setSignupEmail] = useState("");
   const [signupPassword, setSignupPassword] = useState("");
   const [signupName, setSignupName] = useState("");
+
+  // Reset Password State
+  const [resetOpen, setResetOpen] = useState(false);
+  const [resetEmail, setResetEmail] = useState("");
+  const [resetLoading, setResetLoading] = useState(false);
+
   const { signIn, signUp, signInWithGoogle, user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!resetEmail) {
+      toast({
+        variant: "destructive",
+        title: "خطأ",
+        description: "يرجى إدخال البريد الإلكتروني",
+      });
+      return;
+    }
+
+    setResetLoading(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "تم إرسال الرابط",
+        description: "راجع بريدك الإلكتروني لإعادة تعيين كلمة المرور",
+      });
+      setResetOpen(false);
+      setResetEmail("");
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "خطأ",
+        description: error.message || "فشل إرسال رابط الاستعادة",
+      });
+    } finally {
+      setResetLoading(false);
+    }
+  };
 
   const isSigningUp = useRef(false);
 
@@ -35,7 +85,7 @@ const Auth = () => {
         const { data: profile, error } = await supabase
           .from("profiles")
           .select("phone, first_name, last_name, is_active")
-          .eq("user_id", user.id)
+          .eq("id", user.id)
           .single();
 
         if (error && error.code !== "PGRST116") {
@@ -240,6 +290,16 @@ const Auth = () => {
                     "تسجيل الدخول"
                   )}
                 </Button>
+
+                <div className="text-center">
+                  <button
+                    type="button"
+                    onClick={() => setResetOpen(true)}
+                    className="text-sm text-gold-500 hover:text-gold-400 underline transition-colors"
+                  >
+                    نسيت كلمة المرور؟
+                  </button>
+                </div>
               </form>
 
               <div className="mt-4">
@@ -416,6 +476,45 @@ const Auth = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Reset Password Dialog */}
+      <Dialog open={resetOpen} onOpenChange={setResetOpen}>
+        <DialogContent className="bg-card border-border/50 text-foreground sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-gold-gradient">استعادة كلمة المرور</DialogTitle>
+            <DialogDescription>
+              أدخل بريدك الإلكتروني وسنرسل لك رابطاً لإعادة تعيين كلمة المرور.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleResetPassword} className="space-y-4 mt-4">
+            <div className="space-y-2">
+              <Label htmlFor="reset-email">البريد الإلكتروني</Label>
+              <Input
+                id="reset-email"
+                type="email"
+                placeholder="example@email.com"
+                value={resetEmail}
+                onChange={(e) => setResetEmail(e.target.value)}
+                className="bg-secondary/30 border-border/50"
+              />
+            </div>
+            <Button
+              type="submit"
+              className="w-full bg-gold-gradient hover:bg-gold-gradient-hover text-primary-foreground shadow-gold"
+              disabled={resetLoading}
+            >
+              {resetLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  جاري الإرسال...
+                </>
+              ) : (
+                "إرسال الرابط"
+              )}
+            </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
