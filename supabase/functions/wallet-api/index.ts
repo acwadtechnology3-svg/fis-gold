@@ -718,18 +718,26 @@ Response:
 }
 */
 async function handleBuyGold(req: Request): Promise<Response> {
+    console.log("[handleBuyGold] Started");
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) return errorResponse("Unauthorized", 401);
+    if (!authHeader) {
+        console.log("[handleBuyGold] Missing Authorization header");
+        return errorResponse("Unauthorized", 401);
+    }
 
     const supabase = getServiceClient();
     const userClient = getUserClient(authHeader);
 
     const { data: { user }, error: authError } = await userClient.auth.getUser();
-    if (authError || !user) return errorResponse("Unauthorized", 401);
+    if (authError || !user) {
+        console.log("[handleBuyGold] Auth failed:", authError?.message);
+        return errorResponse("Unauthorized", 401);
+    }
 
     const correlationId = crypto.randomUUID();
     const body = await req.json();
     const { amount, grams, duration_days, snapshot_id, idempotency_key } = body;
+    console.log("[handleBuyGold] Params:", { amount, grams, duration_days, snapshot_id, idempotency_key });
 
     // Validation
     if (!snapshot_id) return errorResponse("Snapshot ID required");
@@ -746,6 +754,8 @@ async function handleBuyGold(req: Request): Promise<Response> {
         .eq("is_active", true)
         .single();
 
+    console.log("[handleBuyGold] Min setting:", minSetting);
+
     if (minSetting?.setting_value?.amount) {
         minInvestment = Number(minSetting.setting_value.amount);
     }
@@ -759,6 +769,7 @@ async function handleBuyGold(req: Request): Promise<Response> {
     }
 
     // Verify snapshot is valid and not expired
+    console.log("[handleBuyGold] Fetching snapshot:", snapshot_id);
     const { data: snapshot, error: snapshotError } = await supabase
         .from("gold_price_snapshots")
         .select("*")
@@ -766,20 +777,30 @@ async function handleBuyGold(req: Request): Promise<Response> {
         .single();
 
     if (snapshotError || !snapshot) {
+        console.log("[handleBuyGold] Snapshot error:", snapshotError);
         return errorResponse("Invalid snapshot", 400);
     }
+    console.log("[handleBuyGold] Snapshot found:", snapshot);
 
     if (snapshot.used) {
+        console.log("[handleBuyGold] Snapshot used");
         return errorResponse("Snapshot already used", 400);
     }
 
     if (snapshot.valid_until && new Date(snapshot.valid_until) < new Date()) {
+        console.log("[handleBuyGold] Snapshot expired. Valid util:", snapshot.valid_until, "Now:", new Date().toISOString());
         return errorResponse("Snapshot expired", 400);
     }
 
     // Calculate grams and amount
-    // User buys at sell_price (ask price)
-    const askPrice = Number(snapshot.sell_price);
+    // User buys at sell_price (ask price) - use sell_price_gram or buy_price_gram
+    const askPrice = Number(snapshot.sell_price_gram || snapshot.buy_price_gram || 0);
+    console.log("[handleBuyGold] Ask Price:", askPrice);
+
+    if (askPrice <= 0) {
+        console.log("[handleBuyGold] Invalid price in snapshot");
+        return errorResponse("Invalid price in snapshot", 400);
+    }
     let buyAmount: number;
     let buyGrams: number;
 
@@ -1292,8 +1313,11 @@ serve(async (req: Request) => {
     const path = url.pathname;
     const method = req.method;
 
+    console.log(`[wallet-api] ${method} ${path}`);
+
     // CORS
     if (method === "OPTIONS") {
+        console.log("[wallet-api] Handling OPTIONS preflight");
         return new Response(null, {
             headers: {
                 "Access-Control-Allow-Origin": "*",
@@ -1304,10 +1328,15 @@ serve(async (req: Request) => {
     }
 
     try {
+        console.log("[wallet-api] Processing request...");
+
         // Support action-based routing from supabase.functions.invoke()
         if (method === "POST" && (path === "/" || path === "/wallet-api" || path === "")) {
+            console.log("[wallet-api] Action-based routing detected");
             const body = await req.json();
+            console.log("[wallet-api] Body received:", JSON.stringify(body));
             const action = body.action;
+            console.log("[wallet-api] Action:", action);
 
             // Create a new request with the body
             const newReq = new Request(req.url, {
