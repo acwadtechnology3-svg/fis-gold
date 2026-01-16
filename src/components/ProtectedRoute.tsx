@@ -67,6 +67,10 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
 
   // If profile is not active or incomplete, redirect to complete-profile
   if (!isProfileActive) {
+    // If we are already at complete-profile, allow access to prevent loop
+    if (location.pathname === "/complete-profile") {
+      return <>{children}</>;
+    }
     return <Navigate to="/complete-profile" replace />;
   }
 
