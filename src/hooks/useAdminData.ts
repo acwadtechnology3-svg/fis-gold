@@ -192,7 +192,7 @@ export const useAdminData = () => {
   const fetchFeeRules = async () => {
     const { data, error } = await (supabase
       .from("fee_rules" as any) as any)
-      .select("fee_type, fee_percent");
+      .select("fee_type, percent");
 
     if (error) {
       console.error("Error fetching fee rules:", error);
@@ -201,7 +201,7 @@ export const useAdminData = () => {
 
     const rules: Record<string, number> = {};
     data.forEach((rule: any) => {
-      rules[rule.fee_type] = rule.fee_percent;
+      rules[rule.fee_type] = rule.percent;
     });
     setFeeRules(rules);
   };
@@ -209,7 +209,8 @@ export const useAdminData = () => {
   const updateFeeRule = async (feeType: string, feePercent: number) => {
     const { error } = await (supabase
       .from("fee_rules" as any) as any)
-      .upsert({ fee_type: feeType, fee_percent: feePercent }, { onConflict: "fee_type" });
+      .update({ percent: feePercent })
+      .eq("fee_type", feeType);
 
     if (error) {
       toast.error("حدث خطأ في تحديث نسبة الرسوم");

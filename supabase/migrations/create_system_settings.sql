@@ -18,7 +18,7 @@ alter table system_settings enable row level security;
 create table if not exists fee_rules (
   id uuid default gen_random_uuid() primary key,
   fee_type text unique not null,
-  rate decimal(10, 4) not null default 0,
+  fee_percent decimal(10, 4) not null default 0,
   description text,
   is_active boolean default true,
   created_at timestamptz default now(),
@@ -36,7 +36,7 @@ insert into system_settings (key, value, description) values
 on conflict (key) do nothing;
 
 -- 4. Insert default fee rules
-insert into fee_rules (fee_type, rate, description) values
+insert into fee_rules (fee_type, fee_percent, description) values
   ('forced_withdrawal', 0.10, 'رسوم السحب المبكر (كسر الوديعة) - 10%'),
   ('normal_withdrawal', 0.02, 'رسوم السحب العادي - 2%'),
   ('gold_buy', 0.01, 'رسوم شراء الذهب - 1%'),
