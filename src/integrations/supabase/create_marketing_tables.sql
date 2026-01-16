@@ -2,6 +2,7 @@
 create table public.banners (
   id uuid default gen_random_uuid() primary key,
   title text not null,
+  image_url text, -- Store banner image URL
   description text,
   button_text text,
   button_link text,

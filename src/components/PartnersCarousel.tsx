@@ -1,21 +1,51 @@
 import { useTranslation } from 'react-i18next';
 import { useEffect, useState } from 'react';
 
+import { supabase } from "@/integrations/supabase/client";
+
+interface Partner {
+    id: string;
+    name: string;
+    website_url: string | null;
+    logo_url: string | null;
+}
+
 const PartnersCarousel = () => {
     const { t, i18n } = useTranslation();
     const isRTL = i18n.language === 'ar';
+    const [partners, setPartners] = useState<Partner[]>([]);
+    const [loading, setLoading] = useState(true);
 
-    // Using placeholder images for now as we don't have the original assets
-    // You should replace these with actual partner logos
-    const partnerImages = [
-        '/assets/partner1.png',
-        '/assets/partner2.png',
-        '/assets/partner3.png',
-        '/assets/partner4.png',
-        '/assets/partner5.png'
-    ];
+    useEffect(() => {
+        const fetchPartners = async () => {
+            try {
+                const { data, error } = await (supabase as any)
+                    .from("partners")
+                    .select("*")
+                    .eq("is_active", true)
+                    .order("display_order", { ascending: true });
 
-    const duplicatedPartners = [...partnerImages, ...partnerImages, ...partnerImages];
+                if (error) throw error;
+                setPartners(data || []);
+            } catch (error) {
+                console.error("Error fetching partners:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchPartners();
+    }, []);
+
+    // If there are no partners or not enough for a carousel, we could either hide it or duplicate the few we have more times.
+    // For now, let's just duplicate whatever we have enough to fill some space or make it look like a carousel.
+    // If no partners, fallback to empty array/null
+    if (!loading && partners.length === 0) {
+        return null;
+    }
+
+    // Ensure we have enough items to scroll smoothly
+    const duplicatedPartners = partners.length > 0 ? [...partners, ...partners, ...partners, ...partners] : [];
 
     return (
         <div className="relative w-full overflow-hidden py-10 bg-black/20">
@@ -33,14 +63,22 @@ const PartnersCarousel = () => {
                     animationDirection: isRTL ? 'reverse' : 'normal',
                 }}
             >
-                {duplicatedPartners.map((_, index) => (
+                {duplicatedPartners.map((partner, index) => (
                     <div
-                        key={index}
+                        key={`${partner.id}-${index}`}
                         className="flex-shrink-0 w-48 h-32 bg-white/5 backdrop-blur-md rounded-xl p-4 flex items-center justify-center border border-white/10 hover:border-gold/50 transition-all duration-300 group"
                     >
-                        <div className="text-muted-foreground group-hover:text-gold transition-colors font-bold text-xl">
-                            PARTNER LOGO
-                        </div>
+                        {partner.logo_url ? (
+                            <img
+                                src={partner.logo_url}
+                                alt={partner.name}
+                                className="max-w-full max-h-full object-contain filter grayscale group-hover:grayscale-0 transition-all duration-300"
+                            />
+                        ) : (
+                            <div className="text-muted-foreground group-hover:text-gold transition-colors font-bold text-lg text-center">
+                                {partner.name}
+                            </div>
+                        )}
                     </div>
                 ))}
             </div>

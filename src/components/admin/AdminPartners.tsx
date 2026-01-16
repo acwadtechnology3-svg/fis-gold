@@ -15,6 +15,7 @@ interface Partner {
     website_url: string | null;
     is_active: boolean;
     display_order: number;
+    logo_url: string | null;
 }
 
 export const AdminPartners = () => {
@@ -22,17 +23,20 @@ export const AdminPartners = () => {
     const [loading, setLoading] = useState(true);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [editingPartner, setEditingPartner] = useState<Partner | null>(null);
+    const [uploading, setUploading] = useState(false);
 
     const [formData, setFormData] = useState({
         name: "",
         website_url: "",
+        logo_url: "",
         is_active: true,
     });
 
     const fetchPartners = async () => {
         try {
             setLoading(true);
-            const { data, error } = await supabase
+            setLoading(true);
+            const { data, error } = await (supabase as any)
                 .from("partners")
                 .select("*")
                 .order("display_order", { ascending: true });
@@ -55,14 +59,14 @@ export const AdminPartners = () => {
         e.preventDefault();
         try {
             if (editingPartner) {
-                const { error } = await supabase
+                const { error } = await (supabase as any)
                     .from("partners")
                     .update(formData)
                     .eq("id", editingPartner.id);
                 if (error) throw error;
                 toast.success("تم تحديث الشريك بنجاح");
             } else {
-                const { error } = await supabase.from("partners").insert(formData);
+                const { error } = await (supabase as any).from("partners").insert(formData);
                 if (error) throw error;
                 toast.success("تم إضافة الشريك بنجاح");
             }
@@ -78,7 +82,7 @@ export const AdminPartners = () => {
     const handleDelete = async (id: string) => {
         if (!window.confirm("هل أنت متأكد من حذف هذا الشريك؟")) return;
         try {
-            const { error } = await supabase.from("partners").delete().eq("id", id);
+            const { error } = await (supabase as any).from("partners").delete().eq("id", id);
             if (error) throw error;
             toast.success("تم حذف الشريك بنجاح");
             fetchPartners();
@@ -90,7 +94,7 @@ export const AdminPartners = () => {
 
     const handleToggleActive = async (id: string, currentState: boolean) => {
         try {
-            const { error } = await supabase
+            const { error } = await (supabase as any)
                 .from("partners")
                 .update({ is_active: !currentState })
                 .eq("id", id);
@@ -107,6 +111,7 @@ export const AdminPartners = () => {
         setFormData({
             name: partner.name,
             website_url: partner.website_url || "",
+            logo_url: partner.logo_url || "",
             is_active: partner.is_active,
         });
         setIsDialogOpen(true);
@@ -117,6 +122,7 @@ export const AdminPartners = () => {
         setFormData({
             name: "",
             website_url: "",
+            logo_url: "",
             is_active: true,
         });
     };
@@ -148,6 +154,66 @@ export const AdminPartners = () => {
                                     required
                                 />
                             </div>
+
+                            <div className="space-y-2">
+                                <Label>شعار الشريك (اختياري)</Label>
+                                <Input
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={async (e) => {
+                                        const file = e.target.files?.[0];
+                                        if (!file) return;
+
+                                        try {
+                                            setUploading(true);
+                                            const fileExt = file.name.split('.').pop();
+                                            const fileName = `partner_${Math.random()}.${fileExt}`;
+                                            const filePath = `${fileName}`;
+
+                                            const { error: uploadError } = await supabase.storage
+                                                .from('marketing')
+                                                .upload(filePath, file);
+
+                                            if (uploadError) {
+                                                throw uploadError;
+                                            }
+
+                                            const { data: { publicUrl } } = supabase.storage
+                                                .from('marketing')
+                                                .getPublicUrl(filePath);
+
+                                            setFormData({ ...formData, logo_url: publicUrl });
+                                            toast.success("تم رفع الشعار بنجاح");
+                                        } catch (error) {
+                                            console.error("Error uploading logo:", error);
+                                            toast.error("فشل رفع الشعار");
+                                        } finally {
+                                            setUploading(false);
+                                        }
+                                    }}
+                                    disabled={uploading}
+                                />
+                                {uploading && <p className="text-sm text-muted-foreground">جاري الرفع...</p>}
+                                {formData.logo_url && (
+                                    <div className="mt-2 relative w-32 h-20 rounded-lg overflow-hidden border bg-gray-100 flex items-center justify-center">
+                                        <img
+                                            src={formData.logo_url}
+                                            alt="Preview"
+                                            className="max-w-full max-h-full object-contain p-2"
+                                        />
+                                        <Button
+                                            type="button"
+                                            variant="destructive"
+                                            size="icon"
+                                            className="absolute top-1 right-1 h-5 w-5"
+                                            onClick={() => setFormData({ ...formData, logo_url: "" })}
+                                        >
+                                            <Trash2 className="w-3 h-3" />
+                                        </Button>
+                                    </div>
+                                )}
+                            </div>
+
                             <div className="space-y-2">
                                 <Label>الموقع الإلكتروني</Label>
                                 <Input
@@ -163,7 +229,7 @@ export const AdminPartners = () => {
                                 />
                                 <Label>تفعيل الشريك</Label>
                             </div>
-                            <Button type="submit" className="w-full">
+                            <Button type="submit" className="w-full" disabled={uploading}>
                                 {editingPartner ? "تحديث" : "إضافة"}
                             </Button>
                         </form>

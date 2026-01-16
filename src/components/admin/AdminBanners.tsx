@@ -17,6 +17,7 @@ interface Banner {
     button_link: string | null;
     is_active: boolean;
     display_order: number;
+    image_url: string | null;
 }
 
 export const AdminBanners = () => {
@@ -24,6 +25,7 @@ export const AdminBanners = () => {
     const [loading, setLoading] = useState(true);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [editingBanner, setEditingBanner] = useState<Banner | null>(null);
+    const [uploading, setUploading] = useState(false);
 
     // Form state
     const [formData, setFormData] = useState({
@@ -32,12 +34,14 @@ export const AdminBanners = () => {
         button_text: "",
         button_link: "",
         is_active: true,
+        image_url: "",
     });
 
     const fetchBanners = async () => {
         try {
             setLoading(true);
-            const { data, error } = await supabase
+            setLoading(true);
+            const { data, error } = await (supabase as any)
                 .from("banners")
                 .select("*")
                 .order("display_order", { ascending: true });
@@ -60,14 +64,14 @@ export const AdminBanners = () => {
         e.preventDefault();
         try {
             if (editingBanner) {
-                const { error } = await supabase
+                const { error } = await (supabase as any)
                     .from("banners")
                     .update(formData)
                     .eq("id", editingBanner.id);
                 if (error) throw error;
                 toast.success("تم تحديث البنر بنجاح");
             } else {
-                const { error } = await supabase.from("banners").insert(formData);
+                const { error } = await (supabase as any).from("banners").insert(formData);
                 if (error) throw error;
                 toast.success("تم إضافة البنر بنجاح");
             }
@@ -83,7 +87,7 @@ export const AdminBanners = () => {
     const handleDelete = async (id: string) => {
         if (!window.confirm("هل أنت متأكد من حذف هذا البنر؟")) return;
         try {
-            const { error } = await supabase.from("banners").delete().eq("id", id);
+            const { error } = await (supabase as any).from("banners").delete().eq("id", id);
             if (error) throw error;
             toast.success("تم حذف البنر بنجاح");
             fetchBanners();
@@ -95,7 +99,7 @@ export const AdminBanners = () => {
 
     const handleToggleActive = async (id: string, currentState: boolean) => {
         try {
-            const { error } = await supabase
+            const { error } = await (supabase as any)
                 .from("banners")
                 .update({ is_active: !currentState })
                 .eq("id", id);
@@ -115,6 +119,7 @@ export const AdminBanners = () => {
             button_text: banner.button_text || "",
             button_link: banner.button_link || "",
             is_active: banner.is_active,
+            image_url: banner.image_url || "",
         });
         setIsDialogOpen(true);
     };
@@ -127,6 +132,7 @@ export const AdminBanners = () => {
             button_text: "",
             button_link: "",
             is_active: true,
+            image_url: "",
         });
     };
 
@@ -156,6 +162,64 @@ export const AdminBanners = () => {
                                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                                     required
                                 />
+                            </div>
+                            <div className="space-y-2">
+                                <Label>صورة البنر (اختياري)</Label>
+                                <Input
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={async (e) => {
+                                        const file = e.target.files?.[0];
+                                        if (!file) return;
+
+                                        try {
+                                            setUploading(true);
+                                            const fileExt = file.name.split('.').pop();
+                                            const fileName = `${Math.random()}.${fileExt}`;
+                                            const filePath = `${fileName}`;
+
+                                            const { error: uploadError } = await supabase.storage
+                                                .from('marketing')
+                                                .upload(filePath, file);
+
+                                            if (uploadError) {
+                                                throw uploadError;
+                                            }
+
+                                            const { data: { publicUrl } } = supabase.storage
+                                                .from('marketing')
+                                                .getPublicUrl(filePath);
+
+                                            setFormData({ ...formData, image_url: publicUrl });
+                                            toast.success("تم رفع الصورة بنجاح");
+                                        } catch (error) {
+                                            console.error("Error uploading image:", error);
+                                            toast.error("فشل رفع الصورة");
+                                        } finally {
+                                            setUploading(false);
+                                        }
+                                    }}
+                                    disabled={uploading}
+                                />
+                                {uploading && <p className="text-sm text-muted-foreground">جاري الرفع...</p>}
+                                {formData.image_url && (
+                                    <div className="mt-2 relative w-full h-32 rounded-lg overflow-hidden border">
+                                        <img
+                                            src={formData.image_url}
+                                            alt="Preview"
+                                            className="w-full h-full object-cover"
+                                        />
+                                        <Button
+                                            type="button"
+                                            variant="destructive"
+                                            size="icon"
+                                            className="absolute top-2 right-2 h-6 w-6"
+                                            onClick={() => setFormData({ ...formData, image_url: "" })}
+                                        >
+                                            <Trash2 className="w-3 h-3" />
+                                        </Button>
+                                    </div>
+                                )}
                             </div>
                             <div className="space-y-2">
                                 <Label>الوصف</Label>
@@ -188,7 +252,7 @@ export const AdminBanners = () => {
                                 />
                                 <Label>تفعيل البنر</Label>
                             </div>
-                            <Button type="submit" className="w-full">
+                            <Button type="submit" className="w-full" disabled={uploading}>
                                 {editingBanner ? "تحديث" : "إضافة"}
                             </Button>
                         </form>
