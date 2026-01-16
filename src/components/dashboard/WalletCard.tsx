@@ -23,7 +23,7 @@ const WalletCard = ({ balance, isLoading }: WalletCardProps) => {
                 ) : (
                     <div className="text-center">
                         <p className="text-3xl font-bold text-gold-gradient">
-                            {balance.toLocaleString("ar-EG", { maximumFractionDigits: 2 })}
+                            {(balance ?? 0).toLocaleString("ar-EG", { maximumFractionDigits: 2 })}
                             <span className="text-lg font-normal text-muted-foreground mr-2">ج.م</span>
                         </p>
                         <p className="text-sm text-muted-foreground mt-2">

@@ -110,7 +110,7 @@ const InvestmentLogs = ({ deposits, isLoading }: InvestmentLogsProps) => {
                                 <div className="flex justify-between items-start mb-3">
                                     <div>
                                         <p className="font-bold text-gold-gradient text-lg">
-                                            {deposit.amount.toLocaleString("ar-EG")} ج.م
+                                            {(deposit.amount ?? 0).toLocaleString("ar-EG")} ج.م
                                         </p>
                                         <p className="text-sm text-muted-foreground">
                                             {deposit.gold_grams?.toFixed(4)} جرام ذهب
