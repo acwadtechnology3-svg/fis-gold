@@ -3,14 +3,20 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { ShieldCheck, Copy, Upload, Wallet, CreditCard, Clock, Phone, AlertCircle, CheckCircle2 } from "lucide-react";
+import { ShieldCheck, Copy, Upload, Wallet, CreditCard, Clock, Phone, AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
+import { useSystemSettings } from "@/hooks/useSystemSettings";
 
 const Deposit = () => {
     const { toast } = useToast();
+    const { getSetting, loading: settingsLoading } = useSystemSettings();
     const [amount, setAmount] = useState("");
     const [phone, setPhone] = useState("");
     const [screenshot, setScreenshot] = useState<File | null>(null);
+
+    // Get wallet and InstaPay settings with fallback values
+    const walletNumber = getSetting("company_wallet_number") || "01027136059";
+    const instapayAddress = getSetting("company_instapay_address") || "fisgold@instapay";
 
     const handleCopyNumber = (number: string) => {
         navigator.clipboard.writeText(number);
@@ -47,71 +53,77 @@ const Deposit = () => {
             <div className="max-w-3xl mx-auto bg-[#1a1f2e]/50 backdrop-blur border border-blue-900/30 rounded-xl p-6 md:p-8 shadow-2xl">
                 <h2 className="text-xl font-bold text-white mb-6 text-right">طرق الإيداع المتاحة</h2>
 
-                <Tabs defaultValue="wallet" className="w-full" dir="rtl">
-                    <TabsList className="grid w-full grid-cols-2 bg-[#0d1117] h-12 mb-6">
-                        <TabsTrigger value="wallet" className="data-[state=active]:bg-[#1a2333] data-[state=active]:text-white gap-2">
-                            <Wallet className="w-4 h-4" />
-                            محفظة إلكترونية
-                        </TabsTrigger>
-                        <TabsTrigger value="instapay" className="data-[state=active]:bg-[#1a2333] data-[state=active]:text-white gap-2">
-                            <CreditCard className="w-4 h-4" />
-                            إنستاباي
-                        </TabsTrigger>
-                    </TabsList>
+                {settingsLoading ? (
+                    <div className="flex items-center justify-center py-12">
+                        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                    </div>
+                ) : (
+                    <Tabs defaultValue="wallet" className="w-full" dir="rtl">
+                        <TabsList className="grid w-full grid-cols-2 bg-[#0d1117] h-12 mb-6">
+                            <TabsTrigger value="wallet" className="data-[state=active]:bg-[#1a2333] data-[state=active]:text-white gap-2">
+                                <Wallet className="w-4 h-4" />
+                                محفظة إلكترونية
+                            </TabsTrigger>
+                            <TabsTrigger value="instapay" className="data-[state=active]:bg-[#1a2333] data-[state=active]:text-white gap-2">
+                                <CreditCard className="w-4 h-4" />
+                                إنستاباي
+                            </TabsTrigger>
+                        </TabsList>
 
-                    {/* Wallet Content */}
-                    <TabsContent value="wallet" className="space-y-6">
-                        <div className="bg-[#1e2538] border border-blue-900/30 rounded-xl p-6 text-center relative overflow-hidden group">
-                            <div className="flex items-center gap-2 mb-2 text-blue-300">
-                                <Wallet className="w-5 h-5" />
-                                <span className="font-medium">رقم المحفظة للإرسال</span>
-                            </div>
-                            <div
-                                className="text-4xl font-bold text-white tracking-wider cursor-pointer hover:text-gold transition-colors"
-                                onClick={() => handleCopyNumber("01027136059")}
-                            >
-                                01027136059
-                            </div>
-                            <p className="text-sm text-gray-400 mt-2">أرسل المبلغ إلى هذا الرقم</p>
+                        {/* Wallet Content */}
+                        <TabsContent value="wallet" className="space-y-6">
+                            <div className="bg-[#1e2538] border border-blue-900/30 rounded-xl p-6 text-center relative overflow-hidden group">
+                                <div className="flex items-center gap-2 mb-2 text-blue-300">
+                                    <Wallet className="w-5 h-5" />
+                                    <span className="font-medium">رقم المحفظة للإرسال</span>
+                                </div>
+                                <div
+                                    className="text-4xl font-bold text-white tracking-wider cursor-pointer hover:text-gold transition-colors"
+                                    onClick={() => handleCopyNumber(walletNumber)}
+                                >
+                                    {walletNumber}
+                                </div>
+                                <p className="text-sm text-gray-400 mt-2">أرسل المبلغ إلى هذا الرقم</p>
 
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                className="absolute top-4 left-4 text-gray-400 hover:text-white"
-                                onClick={() => handleCopyNumber("01027136059")}
-                            >
-                                <Copy className="w-5 h-5" />
-                            </Button>
-                        </div>
-                        {renderForm(amount, setAmount, phone, setPhone, screenshot, setScreenshot, handleSubmit)}
-                    </TabsContent>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="absolute top-4 left-4 text-gray-400 hover:text-white"
+                                    onClick={() => handleCopyNumber(walletNumber)}
+                                >
+                                    <Copy className="w-5 h-5" />
+                                </Button>
+                            </div>
+                            {renderForm(amount, setAmount, phone, setPhone, screenshot, setScreenshot, handleSubmit)}
+                        </TabsContent>
 
-                    {/* Instapay Content */}
-                    <TabsContent value="instapay" className="space-y-6">
-                        <div className="bg-[#1e2538] border border-blue-900/30 rounded-xl p-6 text-center relative overflow-hidden group">
-                            <div className="flex items-center gap-2 mb-2 text-blue-300">
-                                <CreditCard className="w-5 h-5" />
-                                <span className="font-medium">عنوان الدفع للإرسال (Instapay Address)</span>
+                        {/* Instapay Content */}
+                        <TabsContent value="instapay" className="space-y-6">
+                            <div className="bg-[#1e2538] border border-blue-900/30 rounded-xl p-6 text-center relative overflow-hidden group">
+                                <div className="flex items-center gap-2 mb-2 text-blue-300">
+                                    <CreditCard className="w-5 h-5" />
+                                    <span className="font-medium">عنوان الدفع للإرسال (Instapay Address)</span>
+                                </div>
+                                <div
+                                    className="text-2xl font-bold text-white tracking-wider cursor-pointer hover:text-gold transition-colors"
+                                    onClick={() => handleCopyNumber(instapayAddress)}
+                                >
+                                    {instapayAddress}
+                                </div>
+                                <p className="text-sm text-gray-400 mt-2">أرسل المبلغ إلى هذا العنوان</p>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="absolute top-4 left-4 text-gray-400 hover:text-white"
+                                    onClick={() => handleCopyNumber(instapayAddress)}
+                                >
+                                    <Copy className="w-5 h-5" />
+                                </Button>
                             </div>
-                            <div
-                                className="text-2xl font-bold text-white tracking-wider cursor-pointer hover:text-gold transition-colors"
-                                onClick={() => handleCopyNumber("username@instapay")}
-                            >
-                                username@instapay
-                            </div>
-                            <p className="text-sm text-gray-400 mt-2">أرسل المبلغ إلى هذا العنوان</p>
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                className="absolute top-4 left-4 text-gray-400 hover:text-white"
-                                onClick={() => handleCopyNumber("username@instapay")}
-                            >
-                                <Copy className="w-5 h-5" />
-                            </Button>
-                        </div>
-                        {renderForm(amount, setAmount, phone, setPhone, screenshot, setScreenshot, handleSubmit)}
-                    </TabsContent>
-                </Tabs>
+                            {renderForm(amount, setAmount, phone, setPhone, screenshot, setScreenshot, handleSubmit)}
+                        </TabsContent>
+                    </Tabs>
+                )}
             </div>
 
             {/* Footer Notes */}
@@ -200,3 +212,4 @@ const renderForm = (
 );
 
 export default Deposit;
+

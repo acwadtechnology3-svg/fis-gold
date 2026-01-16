@@ -212,6 +212,91 @@ export const AdminSettings = () => {
             )}
           </div>
         </div>
+
+        {/* Payment Settings Section */}
+        <div className="border-t border-primary/20 pt-6 mt-6">
+          <h3 className="text-lg font-semibold text-gold-gradient mb-4">إعدادات الدفع</h3>
+
+          {/* Company Wallet Number */}
+          <div className="space-y-2 mb-4">
+            <Label htmlFor="company_wallet_number">رقم محفظة الشركة للإيداع</Label>
+            <p className="text-sm text-muted-foreground">
+              رقم المحفظة الذي سيظهر للمستخدمين في صفحة الإيداع
+            </p>
+            <div className="flex gap-2">
+              <Input
+                id="company_wallet_number"
+                type="text"
+                placeholder="01027136059"
+                defaultValue={getSetting("company_wallet_number") || "01027136059"}
+                onBlur={(e) => {
+                  const value = e.target.value.trim();
+                  if (value) {
+                    handleUpdateSetting("company_wallet_number", value);
+                  }
+                }}
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const input = document.getElementById("company_wallet_number") as HTMLInputElement;
+                  const value = input.value.trim();
+                  if (value) {
+                    handleUpdateSetting("company_wallet_number", value);
+                  }
+                }}
+                disabled={saving === "company_wallet_number"}
+              >
+                {saving === "company_wallet_number" ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Save className="w-4 h-4" />
+                )}
+              </Button>
+            </div>
+          </div>
+
+          {/* Company InstaPay Address */}
+          <div className="space-y-2">
+            <Label htmlFor="company_instapay_address">عنوان InstaPay للشركة</Label>
+            <p className="text-sm text-muted-foreground">
+              عنوان InstaPay الذي سيظهر للمستخدمين في صفحة الإيداع
+            </p>
+            <div className="flex gap-2">
+              <Input
+                id="company_instapay_address"
+                type="text"
+                placeholder="fisgold@instapay"
+                defaultValue={getSetting("company_instapay_address") || "fisgold@instapay"}
+                onBlur={(e) => {
+                  const value = e.target.value.trim();
+                  if (value) {
+                    handleUpdateSetting("company_instapay_address", value);
+                  }
+                }}
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const input = document.getElementById("company_instapay_address") as HTMLInputElement;
+                  const value = input.value.trim();
+                  if (value) {
+                    handleUpdateSetting("company_instapay_address", value);
+                  }
+                }}
+                disabled={saving === "company_instapay_address"}
+              >
+                {saving === "company_instapay_address" ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Save className="w-4 h-4" />
+                )}
+              </Button>
+            </div>
+          </div>
+        </div>
       </CardContent>
     </Card>
   );

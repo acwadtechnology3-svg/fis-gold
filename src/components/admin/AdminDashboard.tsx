@@ -1,13 +1,13 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { 
-  Users, 
-  ArrowDownToLine, 
-  ArrowUpFromLine, 
-  DollarSign, 
-  TrendingUp, 
-  Clock, 
+import {
+  Users,
+  ArrowDownToLine,
+  ArrowUpFromLine,
+  DollarSign,
+  TrendingUp,
+  Clock,
   CheckCircle2,
   AlertCircle,
   UserCheck,
@@ -197,7 +197,7 @@ export const AdminDashboard = ({ users, deposits, withdrawals }: AdminDashboardP
                   size="sm"
                   variant="outline"
                   onClick={() => {
-                    const element = document.querySelector('[value="deposits"]') as HTMLElement;
+                    const element = document.querySelector('[data-value="deposits"]') as HTMLElement;
                     if (element) element.click();
                   }}
                 >
@@ -219,7 +219,7 @@ export const AdminDashboard = ({ users, deposits, withdrawals }: AdminDashboardP
                   size="sm"
                   variant="outline"
                   onClick={() => {
-                    const element = document.querySelector('[value="withdrawals"]') as HTMLElement;
+                    const element = document.querySelector('[data-value="withdrawals"]') as HTMLElement;
                     if (element) element.click();
                   }}
                 >
@@ -242,7 +242,7 @@ export const AdminDashboard = ({ users, deposits, withdrawals }: AdminDashboardP
                     size="sm"
                     variant="outline"
                     onClick={() => {
-                      const element = document.querySelector('[value="users"]') as HTMLElement;
+                      const element = document.querySelector('[data-value="users"]') as HTMLElement;
                       if (element) element.click();
                     }}
                   >
@@ -265,7 +265,7 @@ export const AdminDashboard = ({ users, deposits, withdrawals }: AdminDashboardP
               variant="outline"
               className="w-full justify-start"
               onClick={() => {
-                const element = document.querySelector('[value="users"]') as HTMLElement;
+                const element = document.querySelector('[data-value="users"]') as HTMLElement;
                 if (element) element.click();
               }}
             >
@@ -276,7 +276,7 @@ export const AdminDashboard = ({ users, deposits, withdrawals }: AdminDashboardP
               variant="outline"
               className="w-full justify-start"
               onClick={() => {
-                const element = document.querySelector('[value="deposits"]') as HTMLElement;
+                const element = document.querySelector('[data-value="deposits"]') as HTMLElement;
                 if (element) element.click();
               }}
             >
@@ -287,7 +287,7 @@ export const AdminDashboard = ({ users, deposits, withdrawals }: AdminDashboardP
               variant="outline"
               className="w-full justify-start"
               onClick={() => {
-                const element = document.querySelector('[value="withdrawals"]') as HTMLElement;
+                const element = document.querySelector('[data-value="withdrawals"]') as HTMLElement;
                 if (element) element.click();
               }}
             >
@@ -298,7 +298,7 @@ export const AdminDashboard = ({ users, deposits, withdrawals }: AdminDashboardP
               variant="outline"
               className="w-full justify-start"
               onClick={() => {
-                const element = document.querySelector('[value="reports"]') as HTMLElement;
+                const element = document.querySelector('[data-value="reports"]') as HTMLElement;
                 if (element) element.click();
               }}
             >
@@ -309,7 +309,7 @@ export const AdminDashboard = ({ users, deposits, withdrawals }: AdminDashboardP
               variant="outline"
               className="w-full justify-start"
               onClick={() => {
-                const element = document.querySelector('[value="settings"]') as HTMLElement;
+                const element = document.querySelector('[data-value="settings"]') as HTMLElement;
                 if (element) element.click();
               }}
             >
