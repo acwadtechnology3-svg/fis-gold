@@ -58,7 +58,7 @@ export const usePortfolio = () => {
         .select("*")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false });
-      
+
       if (error) throw error;
       return data as Deposit[];
     },
@@ -76,7 +76,7 @@ export const usePortfolio = () => {
         .select("*")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false });
-      
+
       if (error) throw error;
       return data as Withdrawal[];
     },
@@ -89,11 +89,34 @@ export const usePortfolio = () => {
     queryKey: queryKeys.portfolioSummary(user?.id || ''),
     queryFn: async () => {
       if (!user) return null;
-      const { data, error } = await supabase
-        .rpc("get_user_portfolio", { p_user_id: user.id });
-      
-      if (error) throw error;
-      return data?.[0] as PortfolioSummary | null;
+      try {
+        const { data, error } = await supabase
+          .rpc("get_user_portfolio", { p_user_id: user.id });
+
+        if (error) {
+          console.error("Portfolio RPC error:", error);
+          // Return default values if RPC fails
+          return {
+            total_invested: 0,
+            total_gold_grams: 0,
+            pending_deposits: 0,
+            approved_deposits: 0,
+            pending_withdrawals: 0,
+            completed_withdrawals: 0,
+          } as PortfolioSummary;
+        }
+        return data?.[0] as PortfolioSummary | null;
+      } catch (err) {
+        console.error("Portfolio fetch error:", err);
+        return {
+          total_invested: 0,
+          total_gold_grams: 0,
+          pending_deposits: 0,
+          approved_deposits: 0,
+          pending_withdrawals: 0,
+          completed_withdrawals: 0,
+        } as PortfolioSummary;
+      }
     },
     enabled: !!user,
     staleTime: 60 * 1000, // Fresh for 1 minute

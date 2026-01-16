@@ -51,9 +51,7 @@ const PortfolioStats = ({ summary, isLoading }: PortfolioStatsProps) => {
                   <div className="h-8 w-24 bg-muted animate-pulse rounded" />
                 ) : (
                   <p className="text-2xl font-bold text-gold-gradient">
-                    {typeof stat.value === "number" 
-                      ? stat.value.toLocaleString("ar-EG", { maximumFractionDigits: 2 })
-                      : stat.value}
+                    {(stat.value ?? 0).toLocaleString("ar-EG", { maximumFractionDigits: 2 })}
                     {stat.suffix && <span className="text-sm font-normal text-muted-foreground mr-1">{stat.suffix}</span>}
                   </p>
                 )}

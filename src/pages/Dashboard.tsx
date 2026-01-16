@@ -5,6 +5,8 @@ import { usePortfolio } from "@/hooks/usePortfolio";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import PortfolioStats from "@/components/dashboard/PortfolioStats";
 import MetalPricesCard from "@/components/dashboard/MetalPricesCard";
+import WalletCard from "@/components/dashboard/WalletCard";
+import InvestmentLogs from "@/components/dashboard/InvestmentLogs";
 import DepositsTable from "@/components/dashboard/DepositsTable";
 import WithdrawalsTable from "@/components/dashboard/WithdrawalsTable";
 import NewDepositDialog from "@/components/dashboard/NewDepositDialog";
@@ -165,14 +167,18 @@ const Dashboard = () => {
           metalType={selectedMetal}
         />
 
-        {/* Metal Prices + Stats */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-          <div className="lg:col-span-2">
+        {/* Wallet + Metal Prices Row */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+          <WalletCard balance={summary?.total_invested ?? 0} isLoading={isLoading} />
+          <MetalPricesCard />
+          <div className="md:col-span-2 lg:col-span-1">
             <PortfolioStats summary={summary} isLoading={isLoading} />
           </div>
-          <div>
-            <MetalPricesCard />
-          </div>
+        </div>
+
+        {/* Investment Logs */}
+        <div className="mb-8">
+          <InvestmentLogs deposits={deposits} isLoading={isLoading} />
         </div>
 
         {/* Tables */}
