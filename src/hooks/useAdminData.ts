@@ -221,15 +221,13 @@ export const useAdminData = () => {
     return true;
   };
 
-  const approveDeposit = async (depositId: string, goldGrams: number, goldPrice: number) => {
+  const approveDeposit = async (depositId: string) => {
     const deposit = deposits.find((d) => d.id === depositId);
 
     const { error } = await supabase
       .from("deposits")
       .update({
         status: "approved",
-        gold_grams: goldGrams,
-        gold_price_at_deposit: goldPrice,
         approved_at: new Date().toISOString(),
       })
       .eq("id", depositId);
@@ -244,11 +242,11 @@ export const useAdminData = () => {
       p_action_type: "deposit_approved",
       p_entity_type: "deposit",
       p_entity_id: depositId,
-      p_description: `تمت الموافقة على إيداع بقيمة ${deposit?.amount} ج.م`,
-      p_metadata: { gold_grams: goldGrams, gold_price: goldPrice },
+      p_description: `تمت الموافقة على إيداع بقيمة ${deposit?.amount} ج.م - تم إضافة المبلغ للمحفظة`,
+      p_metadata: { amount: deposit?.amount },
     });
 
-    toast.success("تمت الموافقة على الإيداع بنجاح");
+    toast.success("تمت الموافقة على الإيداع وإضافة المبلغ للمحفظة");
     fetchDeposits();
     return true;
   };

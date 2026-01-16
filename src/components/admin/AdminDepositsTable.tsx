@@ -27,7 +27,7 @@ import { ArrowDownToLine, Check, X, Eye } from "lucide-react";
 
 interface AdminDepositsTableProps {
   deposits: AdminDeposit[];
-  onApprove: (depositId: string, goldGrams: number, goldPrice: number) => Promise<boolean>;
+  onApprove: (depositId: string) => Promise<boolean>;
   onReject: (depositId: string, notes: string) => Promise<boolean>;
 }
 
@@ -39,23 +39,15 @@ export const AdminDepositsTable = ({
   const [approveDialog, setApproveDialog] = useState<AdminDeposit | null>(null);
   const [rejectDialog, setRejectDialog] = useState<AdminDeposit | null>(null);
   const [viewProofDialog, setViewProofDialog] = useState<string | null>(null);
-  const [goldGrams, setGoldGrams] = useState("");
-  const [goldPrice, setGoldPrice] = useState("");
   const [rejectNotes, setRejectNotes] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleApprove = async () => {
-    if (!approveDialog || !goldGrams || !goldPrice) return;
+    if (!approveDialog) return;
     setLoading(true);
-    const success = await onApprove(
-      approveDialog.id,
-      parseFloat(goldGrams),
-      parseFloat(goldPrice)
-    );
+    const success = await onApprove(approveDialog.id);
     if (success) {
       setApproveDialog(null);
-      setGoldGrams("");
-      setGoldPrice("");
     }
     setLoading(false);
   };
@@ -177,35 +169,22 @@ export const AdminDepositsTable = ({
             <DialogTitle>الموافقة على الإيداع</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
-            <div>
-              <p className="text-sm text-muted-foreground mb-2">
-                المبلغ: {approveDialog?.amount.toLocaleString("ar-EG")} ج.م
-              </p>
-            </div>
-            <div className="space-y-2">
-              <Label>سعر جرام الذهب (ج.م)</Label>
-              <Input
-                type="number"
-                placeholder="أدخل سعر الجرام"
-                value={goldPrice}
-                onChange={(e) => setGoldPrice(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>جرامات الذهب</Label>
-              <Input
-                type="number"
-                placeholder="أدخل عدد الجرامات"
-                value={goldGrams}
-                onChange={(e) => setGoldGrams(e.target.value)}
-              />
-            </div>
+            <p className="text-muted-foreground">
+              هل تريد الموافقة على إيداع بقيمة{" "}
+              <span className="font-bold text-primary">
+                {approveDialog?.amount.toLocaleString("ar-EG")} ج.م
+              </span>
+              ؟
+            </p>
+            <p className="text-sm text-muted-foreground">
+              سيتم إضافة المبلغ إلى رصيد المحفظة الداخلية للمستخدم.
+            </p>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setApproveDialog(null)}>
               إلغاء
             </Button>
-            <Button onClick={handleApprove} disabled={loading || !goldGrams || !goldPrice}>
+            <Button onClick={handleApprove} disabled={loading}>
               {loading ? "جاري الموافقة..." : "موافقة"}
             </Button>
           </DialogFooter>

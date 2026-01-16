@@ -18,6 +18,7 @@ import { AdminProducts } from "@/components/admin/AdminProducts";
 import { AdminBanners } from "@/components/admin/AdminBanners";
 import { AdminPartners } from "@/components/admin/AdminPartners";
 import { AdminDashboard } from "@/components/admin/AdminDashboard";
+import { AdminChat } from "@/components/admin/AdminChat";
 import MetalPricesCard from "@/components/dashboard/MetalPricesCard";
 import GoldParticles from "@/components/GoldParticles";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -178,16 +179,16 @@ const Admin = () => {
 
       <main className="container mx-auto py-6 px-4 space-y-6 relative z-10">
         <Tabs defaultValue="dashboard" className="w-full">
-          <TabsList className="grid w-full grid-cols-11 max-w-6xl overflow-x-auto">
+          <TabsList className="grid w-full grid-cols-12 max-w-6xl overflow-x-auto">
             <TabsTrigger value="dashboard">لوحة التحكم</TabsTrigger>
             <TabsTrigger value="deposits">الإيداعات</TabsTrigger>
             <TabsTrigger value="withdrawals">السحوبات</TabsTrigger>
             <TabsTrigger value="users">المستخدمين</TabsTrigger>
+            <TabsTrigger value="chat">المحادثات</TabsTrigger>
             <TabsTrigger value="goldsmiths">الصايغين</TabsTrigger>
             <TabsTrigger value="products">المنتجات</TabsTrigger>
             <TabsTrigger value="prices">أسعار المعادن</TabsTrigger>
             <TabsTrigger value="reports">التقارير</TabsTrigger>
-            <TabsTrigger value="activity">سجل الأنشطة</TabsTrigger>
             <TabsTrigger value="banners">البنرات</TabsTrigger>
             <TabsTrigger value="partners">الشركاء</TabsTrigger>
             <TabsTrigger value="settings">الإعدادات</TabsTrigger>
@@ -224,6 +225,10 @@ const Admin = () => {
               onRevokeRole={revokeUserRole}
               onGetPortfolio={getUserPortfolio}
             />
+          </TabsContent>
+
+          <TabsContent value="chat" className="mt-6">
+            <AdminChat />
           </TabsContent>
 
           <TabsContent value="goldsmiths" className="mt-6">

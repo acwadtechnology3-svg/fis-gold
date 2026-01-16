@@ -138,9 +138,28 @@ create policy "Admins can manage products"
   using (is_admin());
 
 -- ============================================================
+-- 13. CHAT_MESSAGES table - Admin access
+-- ============================================================
+drop policy if exists "Admins can view all chat_messages" on chat_messages;
+create policy "Admins can view all chat_messages"
+  on chat_messages for select
+  using (is_admin());
+
+drop policy if exists "Admins can insert chat_messages" on chat_messages;
+create policy "Admins can insert chat_messages"
+  on chat_messages for insert
+  with check (is_admin());
+
+drop policy if exists "Admins can update chat_messages" on chat_messages;
+create policy "Admins can update chat_messages"
+  on chat_messages for update
+  using (is_admin());
+
+-- ============================================================
 -- Done! After running this, admins will be able to:
 -- - View all users, deposits, withdrawals
 -- - Approve/reject deposits and withdrawals
 -- - Manage goldsmiths and products
 -- - Update fee rules
+-- - Reply to user chats
 -- ============================================================

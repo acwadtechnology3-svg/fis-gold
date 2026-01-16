@@ -31,8 +31,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Package, Edit, Trash2, Eye, Loader2, Search, Plus, Upload } from "lucide-react";
-import { useProducts, Product } from "@/hooks/useProducts";
-import { useGoldsmiths } from "@/hooks/useGoldsmiths";
+import { useProducts } from "@/hooks/useProducts";
+import { useGoldsmiths, Product } from "@/hooks/useGoldsmiths";
 
 interface ProductWithGoldsmith extends Product {
   goldsmith?: {
@@ -51,8 +51,21 @@ export const AdminProducts = () => {
   const [selectedKarat, setSelectedKarat] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const [uploadingImages, setUploadingImages] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<ProductWithGoldsmith | null>(null);
-  const [editData, setEditData] = useState({
+  const [editData, setEditData] = useState<{
+    name: string;
+    weight_grams: number;
+    karat: number;
+    price: number;
+    making_charge: number;
+    quantity: number;
+    is_active: boolean;
+    description: string;
+    metal_type: 'gold' | 'silver';
+    images: string[];
+  }>({
     name: "",
     weight_grams: 0,
     karat: 18,
@@ -61,6 +74,8 @@ export const AdminProducts = () => {
     quantity: 1,
     is_active: true,
     description: "",
+    metal_type: 'gold',
+    images: [],
   });
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
@@ -191,7 +206,7 @@ export const AdminProducts = () => {
     }
 
     setActionLoading("add");
-    
+
     // Use createProduct with null goldsmith_id for FIS Gold products
     const success = await createProduct(
       {
@@ -385,14 +400,14 @@ export const AdminProducts = () => {
                         <TableCell>
                           {product.goldsmith?.shop_name || "غير معروف"}
                         </TableCell>
-                          <TableCell>{product.weight_grams} جم</TableCell>
-                          <TableCell>
-                            {product.karat ? (
-                              <Badge variant="outline">{product.karat}K</Badge>
-                            ) : (
-                              <Badge variant="outline">{product.metal_type === 'silver' ? 'فضة' : '-'}</Badge>
-                            )}
-                          </TableCell>
+                        <TableCell>{product.weight_grams} جم</TableCell>
+                        <TableCell>
+                          {product.karat ? (
+                            <Badge variant="outline">{product.karat}K</Badge>
+                          ) : (
+                            <Badge variant="outline">{product.metal_type === 'silver' ? 'فضة' : '-'}</Badge>
+                          )}
+                        </TableCell>
                         <TableCell>
                           {(product.price + product.making_charge).toLocaleString("ar-EG")} ج.م
                         </TableCell>
