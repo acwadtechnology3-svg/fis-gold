@@ -202,17 +202,32 @@ export const useAdminData = () => {
   };
 
   const fetchPendingBuys = async () => {
-    const { data, error } = await supabase
-      .from("gold_positions" as any)
-      .select("*, profiles:user_id(full_name, email)")
-      .eq("status", "pending")
-      .order("created_at", { ascending: false });
+    const [buysResult, profilesResult] = await Promise.all([
+      supabase
+        .from("gold_positions" as any)
+        .select("*")
+        .eq("status", "pending")
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("profiles")
+        .select("id, full_name, email")
+    ]);
 
-    if (error) {
-      console.error("Error fetching pending buys:", error);
+    if (buysResult.error) {
+      console.error("Error fetching pending buys:", buysResult.error);
       return;
     }
-    setPendingBuys(data || []);
+
+    const buys = buysResult.data || [];
+    const profiles = profilesResult.data || [];
+    const profilesMap = new Map(profiles.map(p => [p.id, p]));
+
+    const buysWithProfiles = buys.map(buy => ({
+      ...buy,
+      profiles: profilesMap.get(buy.user_id) || { full_name: 'مستخدم غير معروف', email: '' }
+    }));
+
+    setPendingBuys(buysWithProfiles);
   };
 
   const updateFeeRule = async (feeType: string, feePercent: number) => {

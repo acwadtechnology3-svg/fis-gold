@@ -71,23 +71,38 @@ export async function scrapeGoldPrices() {
     // Search for sell price (سعر البيع)
     $("*").each((_, el) => {
         const text = $(el).text();
+        const priceRegex = /(?:EGP\s*)?([\d,]+\.?\d*)(?:\s*EGP)?/;
+
         if (text.includes("سعر البيع") && !goldData.sellPrice) {
             // Find the price value nearby
-            const priceMatch = text.match(/EGP\s*([\d,]+\.?\d*)/);
-            if (priceMatch) {
-                goldData.sellPrice = parseNumber(priceMatch[1]);
+            const match = text.match(/([\d,]+\.?\d*)\s*EGP/) || text.match(/EGP\s*([\d,]+\.?\d*)/);
+            if (match) {
+                let price = parseNumber(match[1]);
+                // Normalize to per gram if it looks like Ounce price (> 10,000)
+                if (price > 10000) {
+                    price = price / 31.1035;
+                }
+                goldData.sellPrice = price;
             }
         }
         if (text.includes("سعر الشراء") && !goldData.buyPrice) {
-            const priceMatch = text.match(/EGP\s*([\d,]+\.?\d*)/);
-            if (priceMatch) {
-                goldData.buyPrice = parseNumber(priceMatch[1]);
+            const match = text.match(/([\d,]+\.?\d*)\s*EGP/) || text.match(/EGP\s*([\d,]+\.?\d*)/);
+            if (match) {
+                let price = parseNumber(match[1]);
+                if (price > 10000) {
+                    price = price / 31.1035;
+                }
+                goldData.buyPrice = price;
             }
         }
         if (text.includes("سعر الفتح") && !goldData.openingPrice) {
-            const priceMatch = text.match(/EGP\s*([\d,]+\.?\d*)/);
-            if (priceMatch) {
-                goldData.openingPrice = parseNumber(priceMatch[1]);
+            const match = text.match(/([\d,]+\.?\d*)\s*EGP/) || text.match(/EGP\s*([\d,]+\.?\d*)/);
+            if (match) {
+                let price = parseNumber(match[1]);
+                if (price > 10000) {
+                    price = price / 31.1035;
+                }
+                goldData.openingPrice = price;
             }
         }
     });
@@ -97,20 +112,38 @@ export async function scrapeGoldPrices() {
         const text = $(row).text();
 
         if (text.includes("سعر البيع") && !goldData.sellPrice) {
-            const match = text.match(/EGP\s*([\d,]+\.?\d*)/);
-            if (match) goldData.sellPrice = parseNumber(match[1]);
+            const match = text.match(/([\d,]+\.?\d*)\s*EGP/) || text.match(/EGP\s*([\d,]+\.?\d*)/);
+            if (match) {
+                let price = parseNumber(match[1]);
+                if (price > 10000) price = price / 31.1035;
+                goldData.sellPrice = price;
+            }
         }
         if (text.includes("سعر الشراء") && !goldData.buyPrice) {
-            const match = text.match(/EGP\s*([\d,]+\.?\d*)/);
-            if (match) goldData.buyPrice = parseNumber(match[1]);
+            const match = text.match(/([\d,]+\.?\d*)\s*EGP/) || text.match(/EGP\s*([\d,]+\.?\d*)/);
+            if (match) {
+                let price = parseNumber(match[1]);
+                if (price > 10000) price = price / 31.1035;
+                goldData.buyPrice = price;
+            }
         }
         if (text.includes("سعر الفتح") && !goldData.openingPrice) {
-            const match = text.match(/EGP\s*([\d,]+\.?\d*)/);
-            if (match) goldData.openingPrice = parseNumber(match[1]);
+            const match = text.match(/([\d,]+\.?\d*)\s*EGP/) || text.match(/EGP\s*([\d,]+\.?\d*)/);
+            if (match) {
+                let price = parseNumber(match[1]);
+                if (price > 10000) price = price / 31.1035;
+                goldData.openingPrice = price;
+            }
         }
         if (text.includes("التغير") && !text.includes("نسبة") && !goldData.changeValue) {
-            const match = text.match(/EGP\s*([-\d,]+\.?\d*)/);
-            if (match) goldData.changeValue = parseNumber(match[1]);
+            const match = text.match(/([\d,]+\.?\d*)\s*EGP/) || text.match(/EGP\s*([\d,]+\.?\d*)/);
+            if (match) {
+                let price = parseNumber(match[1]);
+                // Change value might differ in magnitude, stick to as-is or normalize? 
+                // Change is also for Ounce usually in that table.
+                if (Math.abs(price) > 500) price = price / 31.1035;
+                goldData.changeValue = price;
+            }
         }
         if (text.includes("نسبة التغير") && goldData.changePercent === null) {
             const match = text.match(/([-\d.]+)%/);
@@ -192,11 +225,11 @@ export async function scrapeSilverPrices() {
         const text = $(row).text();
 
         if (text.includes("سعر البيع") && !silverData.sellPrice) {
-            const match = text.match(/EGP\s*([\d,]+\.?\d*)/);
+            const match = text.match(/([\d,]+\.?\d*)\s*EGP/) || text.match(/EGP\s*([\d,]+\.?\d*)/);
             if (match) silverData.sellPrice = parseNumber(match[1]);
         }
         if (text.includes("سعر الشراء") && !silverData.buyPrice) {
-            const match = text.match(/EGP\s*([\d,]+\.?\d*)/);
+            const match = text.match(/([\d,]+\.?\d*)\s*EGP/) || text.match(/EGP\s*([\d,]+\.?\d*)/);
             if (match) silverData.buyPrice = parseNumber(match[1]);
         }
     });
