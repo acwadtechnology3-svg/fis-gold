@@ -143,8 +143,8 @@ const BuyGoldDialog = ({ open, onOpenChange, onSuccess, metalType = "gold" }: Bu
             }
 
             toast({
-                title: "تم الشراء بنجاح",
-                description: `تم شراء ${grams} جرام ${metalType === 'gold' ? 'ذهب' : 'فضة'}`,
+                title: "تم إرسال الطلب",
+                description: `تم إرسال طلب شراء ${grams} جرام ${metalType === 'gold' ? 'ذهب' : 'فضة'} للمراجعة. سيتم إخطارك عند الموافقة.`,
             });
 
             onSuccess();
@@ -260,8 +260,8 @@ const BuyGoldDialog = ({ open, onOpenChange, onSuccess, metalType = "gold" }: Bu
                                     key={year}
                                     onClick={() => setDuration(year * 365)}
                                     className={`cursor-pointer rounded-lg border p-3 text-center text-sm font-bold transition-all ${duration === year * 365
-                                            ? "bg-primary/20 border-primary text-primary"
-                                            : "bg-secondary/20 border-transparent hover:border-primary/50 text-muted-foreground"
+                                        ? "bg-primary/20 border-primary text-primary"
+                                        : "bg-secondary/20 border-transparent hover:border-primary/50 text-muted-foreground"
                                         }`}
                                 >
                                     {year} {year === 1 ? 'سنة' : 'سنوات'}

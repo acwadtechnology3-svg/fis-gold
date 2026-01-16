@@ -109,8 +109,8 @@ const SellAssetDialog = ({ open, onOpenChange, onSuccess, metalType = "gold" }: 
             }
 
             toast({
-                title: "تم البيع بنجاح",
-                description: `تم بيع ${position.grams} جرام ${metalType === 'gold' ? 'ذهب' : 'فضة'} بسعر ${response.net_amount.toLocaleString()} ج.م`,
+                title: "تم إرسال طلب البيع",
+                description: `تم إرسال طلب بيع ${position.grams} جرام. المبلغ المتوقع: ${response.net_amount.toLocaleString()} ج.م (قيد المراجعة)`,
             });
 
             // Remove from list or refresh
@@ -206,7 +206,7 @@ const SellAssetDialog = ({ open, onOpenChange, onSuccess, metalType = "gold" }: 
                                                 {isSelling === pos.id ? (
                                                     <Loader2 className="h-4 w-4 animate-spin" />
                                                 ) : (
-                                                    "بيع الآن"
+                                                    "طلب بيع"
                                                 )}
                                             </Button>
                                         </CardContent>

@@ -28,7 +28,7 @@ export interface AdminDeposit {
   approved_at: string | null;
   user_email?: string;
   user_name?: string;
-  provider?: string; // Added
+  provider?: string;
 }
 
 export interface AdminWithdrawal {
@@ -37,7 +37,7 @@ export interface AdminWithdrawal {
   deposit_id: string | null;
   amount: number;
   withdrawal_type: string;
-  grams?: number | null; // Made optional
+  grams?: number | null;
   gold_price_at_withdrawal: number | null;
   fee_percentage: number | null;
   fee_amount: number | null;
@@ -54,10 +54,12 @@ export const useAdminData = () => {
   const { user } = useAuth();
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  // Data State
   const [users, setUsers] = useState<UserWithProfile[]>([]);
   const [deposits, setDeposits] = useState<AdminDeposit[]>([]);
-
   const [withdrawals, setWithdrawals] = useState<AdminWithdrawal[]>([]);
+  const [pendingBuys, setPendingBuys] = useState<any[]>([]);
   const [feeRules, setFeeRules] = useState<Record<string, number>>({});
 
   const checkAdminRole = async () => {
@@ -85,8 +87,6 @@ export const useAdminData = () => {
 
   const fetchUsers = async () => {
     const userIds: string[] = [];
-
-    // Fetch profiles and roles in parallel
     const [profilesResult, rolesResult] = await Promise.all([
       supabase
         .from("profiles")
@@ -105,7 +105,6 @@ export const useAdminData = () => {
     const profiles = profilesResult.data || [];
     const userRoles = rolesResult.data || [];
 
-    // Group roles by user_id
     const rolesByUserId = new Map<string, string[]>();
     userRoles.forEach((ur) => {
       if (!rolesByUserId.has(ur.user_id)) {
@@ -128,7 +127,6 @@ export const useAdminData = () => {
   };
 
   const fetchDeposits = async () => {
-    // Fetch deposits and profiles in parallel
     const [depositsResult, profilesResult] = await Promise.all([
       supabase
         .from("deposits")
@@ -147,7 +145,6 @@ export const useAdminData = () => {
     const data = (depositsResult.data || []) as any[];
     const profiles = profilesResult.data || [];
 
-    // Create map for faster lookup
     const profilesMap = new Map(profiles.map((p) => [p.id, p.full_name]));
 
     const depositsWithUsers = data.map((deposit) => ({
@@ -159,7 +156,6 @@ export const useAdminData = () => {
   };
 
   const fetchWithdrawals = async () => {
-    // Fetch withdrawals and profiles in parallel
     const [withdrawalsResult, profilesResult] = await Promise.all([
       supabase
         .from("withdrawals")
@@ -178,7 +174,6 @@ export const useAdminData = () => {
     const data = (withdrawalsResult.data || []) as any[];
     const profiles = profilesResult.data || [];
 
-    // Create map for faster lookup
     const profilesMap = new Map(profiles.map((p) => [p.id, p.full_name]));
 
     const withdrawalsWithUsers = data.map((withdrawal) => ({
@@ -204,6 +199,20 @@ export const useAdminData = () => {
       rules[rule.fee_type] = rule.percent;
     });
     setFeeRules(rules);
+  };
+
+  const fetchPendingBuys = async () => {
+    const { data, error } = await supabase
+      .from("gold_positions" as any)
+      .select("*, profiles:user_id(full_name, email)")
+      .eq("status", "pending")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Error fetching pending buys:", error);
+      return;
+    }
+    setPendingBuys(data || []);
   };
 
   const updateFeeRule = async (feeType: string, feePercent: number) => {
@@ -238,7 +247,6 @@ export const useAdminData = () => {
       return false;
     }
 
-    // Log activity
     await supabase.rpc("log_admin_activity", {
       p_action_type: "deposit_approved",
       p_entity_type: "deposit",
@@ -268,7 +276,6 @@ export const useAdminData = () => {
       return false;
     }
 
-    // Log activity
     await supabase.rpc("log_admin_activity", {
       p_action_type: "deposit_rejected",
       p_entity_type: "deposit",
@@ -285,20 +292,17 @@ export const useAdminData = () => {
   const approveWithdrawal = async (withdrawalId: string) => {
     const withdrawal = withdrawals.find((w) => w.id === withdrawalId);
 
-    const { error } = await supabase
-      .from("withdrawals")
-      .update({
-        status: "completed",
-        processed_at: new Date().toISOString(),
-      })
-      .eq("id", withdrawalId);
+    const { data: success, error } = await supabase.rpc('approve_withdrawal_request', {
+      p_withdrawal_id: withdrawalId,
+      p_admin_id: user?.id
+    });
 
-    if (error) {
+    if (error || !success) {
+      console.error("Error approving withdrawal:", error);
       toast.error("حدث خطأ في الموافقة على السحب");
       return false;
     }
 
-    // Log activity
     await supabase.rpc("log_admin_activity", {
       p_action_type: "withdrawal_approved",
       p_entity_type: "withdrawal",
@@ -328,7 +332,6 @@ export const useAdminData = () => {
       return false;
     }
 
-    // Log activity
     await supabase.rpc("log_admin_activity", {
       p_action_type: "withdrawal_rejected",
       p_entity_type: "withdrawal",
@@ -342,16 +345,35 @@ export const useAdminData = () => {
     return true;
   };
 
-  useEffect(() => {
-    checkAdminRole();
-  }, [user]);
+  const approveBuyRequest = async (positionId: string) => {
+    const { data: success, error } = await supabase.rpc('approve_buy_request', {
+      p_position_id: positionId,
+      p_admin_id: user?.id
+    });
 
-  useEffect(() => {
-    if (isAdmin) {
-      // Fetch all data in parallel
-      Promise.all([fetchUsers(), fetchDeposits(), fetchWithdrawals(), fetchFeeRules()]);
+    if (error || !success) {
+      console.error("Error approving buy request:", error);
+      toast.error("حدث خطأ في الموافقة على الطلب");
+      return false;
     }
-  }, [isAdmin]);
+
+    toast.success("تمت الموافقة على طلب الشراء");
+    fetchPendingBuys();
+    return true;
+  };
+
+  const rejectBuyRequest = async (positionId: string) => {
+    const { error } = await supabase.from('gold_positions' as any).delete().eq('id', positionId).eq('status', 'pending');
+
+    if (error) {
+      toast.error("خطأ في رفض الطلب");
+      return false;
+    }
+
+    toast.success("تم رفض الطلب");
+    fetchPendingBuys();
+    return true;
+  };
 
   const updateUserProfile = async (
     userId: string,
@@ -417,24 +439,44 @@ export const useAdminData = () => {
     return data?.[0] || null;
   };
 
+  useEffect(() => {
+    checkAdminRole();
+  }, [user]);
+
+  useEffect(() => {
+    if (isAdmin) {
+      Promise.all([fetchUsers(), fetchDeposits(), fetchWithdrawals(), fetchFeeRules(), fetchPendingBuys()]);
+    }
+  }, [isAdmin]);
+
   return {
     isAdmin,
     loading,
     users,
     deposits,
     withdrawals,
+    pendingBuys,
+    feeRules,
+
+    // Actions
     approveDeposit,
     rejectDeposit,
     approveWithdrawal,
     rejectWithdrawal,
-    refetchDeposits: fetchDeposits,
-    refetchWithdrawals: fetchWithdrawals,
-    refetchUsers: fetchUsers,
+    approveBuyRequest,
+    rejectBuyRequest,
+    updateFeeRule,
+
+    // User Mgmt
     updateUserProfile,
     grantUserRole,
     revokeUserRole,
     getUserPortfolio,
-    feeRules,
-    updateFeeRule,
+
+    // Refresh
+    refetchDeposits: fetchDeposits,
+    refetchWithdrawals: fetchWithdrawals,
+    refetchUsers: fetchUsers,
+    refetchPendingBuys: fetchPendingBuys,
   };
 };

@@ -18,6 +18,7 @@ import { AdminProducts } from "@/components/admin/AdminProducts";
 import { AdminBanners } from "@/components/admin/AdminBanners";
 import { AdminPartners } from "@/components/admin/AdminPartners";
 import { AdminDashboard } from "@/components/admin/AdminDashboard";
+import { AdminBuyRequestsTable } from "@/components/admin/AdminBuyRequestsTable";
 import { AdminChat } from "@/components/admin/AdminChat";
 import MetalPricesCard from "@/components/dashboard/MetalPricesCard";
 import GoldParticles from "@/components/GoldParticles";
@@ -41,6 +42,9 @@ const Admin = () => {
     grantUserRole,
     revokeUserRole,
     getUserPortfolio,
+    pendingBuys,
+    approveBuyRequest,
+    rejectBuyRequest,
   } = useAdminData();
 
   const [depositFilters, setDepositFilters] = useState<FilterState>({
@@ -183,6 +187,7 @@ const Admin = () => {
             <TabsTrigger value="dashboard">لوحة التحكم</TabsTrigger>
             <TabsTrigger value="deposits">الإيداعات</TabsTrigger>
             <TabsTrigger value="withdrawals">السحوبات</TabsTrigger>
+            <TabsTrigger value="buy_requests">طلبات الشراء</TabsTrigger>
             <TabsTrigger value="users">المستخدمين</TabsTrigger>
             <TabsTrigger value="chat">المحادثات</TabsTrigger>
             <TabsTrigger value="goldsmiths">الصايغين</TabsTrigger>
@@ -196,6 +201,20 @@ const Admin = () => {
 
           <TabsContent value="dashboard" className="mt-6">
             <AdminDashboard users={users} deposits={deposits} withdrawals={withdrawals} />
+          </TabsContent>
+
+          <TabsContent value="buy_requests" className="mt-6 space-y-4">
+            <h2 className="text-xl font-bold mb-4">طلبات شراء الذهب/الفضة المعلقة</h2>
+            {/* We need to import AdminBuyRequestsTable. Since I cannot add import in this hunk easily, 
+                 I will add it in a separate hunk. For now using placeholder or assuming auto import if I could.
+                 Wait, I can't assume auto import. I need to modify imports first.
+                 I'll add the content here and fix imports in next step.
+             */}
+            <AdminBuyRequestsTable
+              pendingBuys={pendingBuys}
+              onApprove={approveBuyRequest}
+              onReject={rejectBuyRequest}
+            />
           </TabsContent>
 
           <TabsContent value="deposits" className="mt-6 space-y-4">
