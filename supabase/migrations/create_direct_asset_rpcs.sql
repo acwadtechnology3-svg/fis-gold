@@ -87,23 +87,45 @@ BEGIN
     -- Calculate grams
     -- User buys at sell_price_gram (ask price)
     -- Handle column naming variation (sell_price vs sell_price_gram)
-    -- Try sell_price first (from original schema), then fallback or assume they mapped it
-    -- Based on schema provided: gold_price_snapshots has sell_price (DECIMAL 12,2)
-    -- But recent context mentioned adding sell_price_gram. Let's use sell_price as base from schema but handle 0.
+    -- Try to use whichever column has a valid value (> 0)
     
-    -- NOTE: In schema provided earlier: 
-    -- 250: sell_price DECIMAL(12, 2) NOT NULL
-    v_buy_price := v_snapshot.sell_price;
+    -- Attempt to read sell_price (if exists) and sell_price_gram (if exists)
+    -- Since we can't easily check for column existence dynamically in PL/pgSQL without dynamic SQL,
+    -- and we know the schema might have one or both. 
+    -- We assume the record variable v_snapshot holds all columns.
     
-    -- If user added sell_price_gram column separately, valid logic might be needed, 
-    -- but let's stick to the core column `sell_price` if it exists and is populated.
-    -- If sell_price is 0 or null, check if we need to look elsewhere.
+    -- We will try to cast to numeric to be safe if types differ slightly
+    v_buy_price := 0;
+    
+    -- We use a structured approach to find a non-zero price
+    -- Accessing a non-existent field in a RECORD variable typically throws an error in PL/pgSQL if not careful,
+    -- EXCEPT when using `v_snapshot.*` where the column must exist in the SELECT * query.
+    -- The `gold_price_snapshots` table DEFINITION determines what's in v_snapshot.
+    -- If the table has `sell_price`, v_snapshot.sell_price works.
+    -- If it has `sell_price_gram`, v_snapshot.sell_price_gram works.
+    -- If we try to access a missing column from a RECORD, it throws.
+    
+    -- Workaround: We really need to know the schema.
+    -- Based on previous context, `sell_price_gram` was added. `sell_price` might be the old column.
+    
+    BEGIN
+        v_buy_price := v_snapshot.sell_price_gram;
+    EXCEPTION WHEN OTHERS THEN
+        v_buy_price := 0;
+    END;
+
+    IF v_buy_price IS NULL OR v_buy_price = 0 THEN
+        BEGIN
+            v_buy_price := v_snapshot.sell_price;
+        EXCEPTION WHEN OTHERS THEN
+            -- Keep as 0 or current value
+            NULL;
+        END;
+    END IF;
+    
+    -- If still 0, fallback or fail
     IF v_buy_price IS NULL OR v_buy_price <= 0 THEN
-         -- Attempt to get from sell_price_gram if it exists dynamically? 
-         -- PL/SQL isn't dynamic like that easily without EXECUTE. 
-         -- We'll assume v_snapshot.* includes it if it was added. 
-         -- For now, fail if 0.
-         RETURN QUERY SELECT false, 'Invalid price in snapshot'::TEXT, NULL::UUID, NULL::DECIMAL(12,6), NULL::DECIMAL(12,4); 
+         RETURN QUERY SELECT false, 'Invalid price in snapshot (Price is 0 or missing)'::TEXT, NULL::UUID, NULL::DECIMAL(12,6), NULL::DECIMAL(12,4); 
          RETURN;
     END IF;
 
@@ -236,10 +258,25 @@ BEGIN
 
     -- Use buy_price from snapshot (Dealer buys FROM user, so it's the dealer's buy price / user's sell price)
     -- In database schema: `buy_price` is what dealer buys at.
-    v_sell_price := v_snapshot.buy_price;
     
-    IF v_sell_price <= 0 THEN
-        RETURN QUERY SELECT false, 'Invalid price'::TEXT, NULL::UUID, NULL::DECIMAL, NULL::DECIMAL;
+    v_sell_price := 0;
+    
+    BEGIN
+        v_sell_price := v_snapshot.buy_price_gram;
+    EXCEPTION WHEN OTHERS THEN
+        v_sell_price := 0;
+    END;
+
+    IF v_sell_price IS NULL OR v_sell_price = 0 THEN
+        BEGIN
+            v_sell_price := v_snapshot.buy_price;
+        EXCEPTION WHEN OTHERS THEN
+            NULL;
+        END;
+    END IF;
+    
+    IF v_sell_price IS NULL OR v_sell_price <= 0 THEN
+        RETURN QUERY SELECT false, 'Invalid price in snapshot (Price is 0 or missing)'::TEXT, NULL::UUID, NULL::DECIMAL, NULL::DECIMAL;
         RETURN;
     END IF;
 

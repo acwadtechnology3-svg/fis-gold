@@ -251,26 +251,22 @@ const BuyGoldDialog = ({ open, onOpenChange, onSuccess, metalType = "gold" }: Bu
                         <span className="font-mono text-primary">{displayPrice.toLocaleString()} ج.م</span>
                     </div>
 
-                    {/* Duration Slider - Only show for Gold if applicable, or both? Usually Duration is for Gold contracts. 
-                        If Silver is just 'buy spot', maybe allow duration or hide?
-                        Assuming standard logic for both for now. 
-                    */}
-                    <div className="space-y-4 pt-2">
-                        <div className="flex justify-between items-center">
-                            <Label>مدة الاستثمار</Label>
-                            <span className="text-sm font-bold text-primary">{duration} يوم</span>
-                        </div>
-                        <Slider
-                            value={[duration]}
-                            onValueChange={(vals) => setDuration(vals[0])}
-                            min={90}
-                            max={365}
-                            step={1}
-                            className="py-4"
-                        />
-                        <div className="flex justify-between text-xs text-muted-foreground px-1">
-                            <span>3 شهور</span>
-                            <span>سنة</span>
+                    {/* Duration Selection */}
+                    <div className="space-y-3 pt-2">
+                        <Label>مدة الاستثمار (سنوات)</Label>
+                        <div className="grid grid-cols-3 gap-2">
+                            {[1, 2, 3].map((year) => (
+                                <div
+                                    key={year}
+                                    onClick={() => setDuration(year * 365)}
+                                    className={`cursor-pointer rounded-lg border p-3 text-center text-sm font-bold transition-all ${duration === year * 365
+                                            ? "bg-primary/20 border-primary text-primary"
+                                            : "bg-secondary/20 border-transparent hover:border-primary/50 text-muted-foreground"
+                                        }`}
+                                >
+                                    {year} {year === 1 ? 'سنة' : 'سنوات'}
+                                </div>
+                            ))}
                         </div>
                     </div>
 
