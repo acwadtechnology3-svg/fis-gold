@@ -258,6 +258,7 @@ const Auth = () => {
                       onChange={(e) => setLoginEmail(e.target.value)}
                       className="pr-10 bg-secondary/30 border-border/50 focus:border-primary"
                       dir="ltr"
+                      autoComplete="username"
                     />
                   </div>
                 </div>
@@ -273,6 +274,7 @@ const Auth = () => {
                       onChange={(e) => setLoginPassword(e.target.value)}
                       className="pr-10 bg-secondary/30 border-border/50 focus:border-primary"
                       dir="ltr"
+                      autoComplete="current-password"
                     />
                   </div>
                 </div>
@@ -355,6 +357,7 @@ const Auth = () => {
                       value={signupName}
                       onChange={(e) => setSignupName(e.target.value)}
                       className="pr-10 bg-secondary/30 border-border/50 focus:border-primary"
+                      autoComplete="name"
                     />
                   </div>
                 </div>
@@ -370,6 +373,7 @@ const Auth = () => {
                       onChange={(e) => setSignupEmail(e.target.value)}
                       className="pr-10 bg-secondary/30 border-border/50 focus:border-primary"
                       dir="ltr"
+                      autoComplete="email"
                     />
                   </div>
                 </div>
@@ -385,6 +389,7 @@ const Auth = () => {
                       onChange={(e) => setSignupPassword(e.target.value)}
                       className="pr-10 bg-secondary/30 border-border/50 focus:border-primary"
                       dir="ltr"
+                      autoComplete="new-password"
                     />
                   </div>
                 </div>
