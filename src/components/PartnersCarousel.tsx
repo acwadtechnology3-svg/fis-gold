@@ -1,7 +1,5 @@
-import { useTranslation } from 'react-i18next';
 import { useEffect, useState } from 'react';
 import { supabase } from "@/integrations/supabase/client";
-import { ExternalLink } from 'lucide-react';
 
 interface Partner {
     id: string;
@@ -11,7 +9,6 @@ interface Partner {
 }
 
 const PartnersCarousel = () => {
-    const { t, i18n } = useTranslation();
     const [partners, setPartners] = useState<Partner[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -42,8 +39,11 @@ const PartnersCarousel = () => {
     }
 
     if (partners.length === 0) {
-        return null; // Hide section if no partners
+        return null;
     }
+
+    // Duplicate partners for infinite scroll effect
+    const duplicatedPartners = [...partners, ...partners, ...partners, ...partners];
 
     return (
         <section className="relative w-full py-20 bg-gradient-to-b from-black/10 to-transparent overflow-hidden">
@@ -67,55 +67,71 @@ const PartnersCarousel = () => {
                     </p>
                 </div>
 
-                {/* Partners Grid - 3 columns centered */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-                    {partners.map((partner) => (
-                        <div
-                            key={partner.id}
-                            className="group relative"
-                        >
-                            <div className="relative bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-md rounded-2xl p-8 border border-white/10 hover:border-primary/50 transition-all duration-500 hover:shadow-2xl hover:shadow-primary/20 h-48 flex items-center justify-center overflow-hidden">
-                                {/* Glow effect on hover */}
-                                <div className="absolute inset-0 bg-gradient-to-br from-primary/0 to-primary/0 group-hover:from-primary/10 group-hover:to-primary/5 transition-all duration-500 rounded-2xl" />
+                {/* Infinite Scrolling Partners */}
+                <div className="relative">
+                    {/* Gradient overlays for smooth fade */}
+                    <div className="absolute left-0 top-0 bottom-0 w-32 bg-gradient-to-r from-background via-background/80 to-transparent z-10 pointer-events-none" />
+                    <div className="absolute right-0 top-0 bottom-0 w-32 bg-gradient-to-l from-background via-background/80 to-transparent z-10 pointer-events-none" />
 
-                                {/* Content */}
-                                <div className="relative z-10 w-full h-full flex items-center justify-center">
-                                    {partner.logo_url ? (
-                                        <img
-                                            src={partner.logo_url}
-                                            alt={partner.name}
-                                            className="max-w-full max-h-full object-contain filter brightness-90 group-hover:brightness-110 transition-all duration-500 group-hover:scale-110"
-                                        />
-                                    ) : (
-                                        <div className="text-foreground/80 group-hover:text-primary transition-colors font-bold text-2xl text-center">
-                                            {partner.name}
+                    <div className="overflow-hidden">
+                        <div className="flex gap-8 animate-scroll-rtl">
+                            {duplicatedPartners.map((partner, index) => (
+                                <div
+                                    key={`${partner.id}-${index}`}
+                                    className="flex-shrink-0 group"
+                                >
+                                    <div className="relative bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-md rounded-2xl p-8 border border-white/10 hover:border-primary/50 transition-all duration-500 hover:shadow-2xl hover:shadow-primary/20 w-64 h-48 flex items-center justify-center overflow-hidden">
+                                        {/* Glow effect on hover */}
+                                        <div className="absolute inset-0 bg-gradient-to-br from-primary/0 to-primary/0 group-hover:from-primary/10 group-hover:to-primary/5 transition-all duration-500 rounded-2xl" />
+
+                                        {/* Content */}
+                                        <div className="relative z-10 w-full h-full flex items-center justify-center">
+                                            {partner.logo_url ? (
+                                                <img
+                                                    src={partner.logo_url}
+                                                    alt={partner.name}
+                                                    className="max-w-full max-h-full object-contain filter brightness-90 group-hover:brightness-110 transition-all duration-500 group-hover:scale-110"
+                                                />
+                                            ) : (
+                                                <div className="text-foreground/80 group-hover:text-primary transition-colors font-bold text-2xl text-center px-4">
+                                                    {partner.name}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* Partner name on hover */}
+                                    {partner.logo_url && (
+                                        <div className="text-center mt-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                            <p className="text-sm text-muted-foreground font-medium">{partner.name}</p>
                                         </div>
                                     )}
                                 </div>
-
-                                {/* Website link indicator */}
-                                {partner.website_url && (
-                                    <a
-                                        href={partner.website_url}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="absolute top-4 left-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-                                    >
-                                        <ExternalLink className="w-5 h-5 text-primary" />
-                                    </a>
-                                )}
-                            </div>
-
-                            {/* Partner name on hover */}
-                            {partner.logo_url && (
-                                <div className="text-center mt-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                                    <p className="text-sm text-muted-foreground font-medium">{partner.name}</p>
-                                </div>
-                            )}
+                            ))}
                         </div>
-                    ))}
+                    </div>
                 </div>
             </div>
+
+            <style jsx>{`
+                @keyframes scroll-rtl {
+                    0% {
+                        transform: translateX(0);
+                    }
+                    100% {
+                        transform: translateX(-50%);
+                    }
+                }
+
+                .animate-scroll-rtl {
+                    animation: scroll-rtl 30s linear infinite;
+                    width: max-content;
+                }
+
+                .animate-scroll-rtl:hover {
+                    animation-play-state: paused;
+                }
+            `}</style>
         </section>
     );
 };
