@@ -63,8 +63,12 @@ export const AdminWithdrawalsTable = ({
 
   const getStatusBadge = (status: string) => {
     switch (status) {
+      case "requested":
+        return <Badge variant="outline" className="bg-blue-500/10 text-blue-600">مطلوب</Badge>;
       case "pending":
         return <Badge variant="outline" className="bg-yellow-500/10 text-yellow-600">معلق</Badge>;
+      case "approved":
+        return <Badge variant="outline" className="bg-green-500/10 text-green-600">موافق عليه</Badge>;
       case "completed":
         return <Badge variant="outline" className="bg-green-500/10 text-green-600">مكتمل</Badge>;
       case "rejected":
@@ -124,7 +128,7 @@ export const AdminWithdrawalsTable = ({
                     <TableCell className="font-medium">{withdrawal.user_name}</TableCell>
                     <TableCell>{getTypeBadge(withdrawal.withdrawal_type)}</TableCell>
                     <TableCell>
-                      {withdrawal.grams 
+                      {withdrawal.grams
                         ? `${withdrawal.grams.toLocaleString("ar-EG", { maximumFractionDigits: 4 })} جرام`
                         : "-"}
                     </TableCell>
@@ -149,7 +153,7 @@ export const AdminWithdrawalsTable = ({
                       {format(new Date(withdrawal.created_at), "dd MMM yyyy", { locale: ar })}
                     </TableCell>
                     <TableCell>
-                      {withdrawal.status === "pending" && (
+                      {(withdrawal.status === "pending" || withdrawal.status === "requested") && (
                         <div className="flex gap-2">
                           <Button
                             size="sm"
@@ -186,7 +190,7 @@ export const AdminWithdrawalsTable = ({
           </DialogHeader>
           <div className="py-4 space-y-3">
             <p className="text-muted-foreground">
-              هل تريد الموافقة على سحب {approveDialog?.grams 
+              هل تريد الموافقة على سحب {approveDialog?.grams
                 ? `${approveDialog.grams.toLocaleString("ar-EG", { maximumFractionDigits: 4 })} جرام ${approveDialog.withdrawal_type === "gold" ? "ذهب" : approveDialog.withdrawal_type === "silver" ? "فضة" : ""}`
                 : `${approveDialog?.amount.toLocaleString("ar-EG")} ج.م`}؟
             </p>

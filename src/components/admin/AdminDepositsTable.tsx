@@ -73,6 +73,8 @@ export const AdminDepositsTable = ({
 
   const getStatusBadge = (status: string) => {
     switch (status) {
+      case "initiated":
+        return <Badge variant="outline" className="bg-blue-500/10 text-blue-600">جديد</Badge>;
       case "pending":
         return <Badge variant="outline" className="bg-yellow-500/10 text-yellow-600">معلق</Badge>;
       case "approved":
@@ -139,7 +141,7 @@ export const AdminDepositsTable = ({
                       )}
                     </TableCell>
                     <TableCell>
-                      {deposit.status === "pending" && (
+                      {(deposit.status === "pending" || deposit.status === "initiated") && (
                         <div className="flex gap-2">
                           <Button
                             size="sm"
@@ -181,7 +183,7 @@ export const AdminDepositsTable = ({
               </p>
             </div>
             <div className="space-y-2">
-                  <Label>سعر جرام الذهب (ج.م)</Label>
+              <Label>سعر جرام الذهب (ج.م)</Label>
               <Input
                 type="number"
                 placeholder="أدخل سعر الجرام"
