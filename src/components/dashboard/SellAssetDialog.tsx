@@ -166,10 +166,17 @@ const SellAssetDialog = ({ open, onOpenChange, onSuccess, metalType = "gold" }: 
                     ) : (
                         <div className="space-y-3">
                             {positions.map((pos) => {
-                                const currentValue = pos.grams * currentSellPrice;
-                                const pl = currentValue - pos.buy_amount;
-                                const isPositive = pl >= 0;
+                                const currentSellPriceVal = currentSellPrice;
+                                const currentValue = pos.grams * currentSellPriceVal;
                                 const isLocked = new Date(pos.lock_until) > new Date();
+
+                                // Penalty Calculation
+                                const penaltyPercent = isLocked ? 0.20 : 0;
+                                const penaltyAmount = currentValue * penaltyPercent;
+                                const netAmount = currentValue - penaltyAmount;
+
+                                const pl = netAmount - pos.buy_amount;
+                                const isPositive = pl >= 0;
 
                                 return (
                                     <Card key={pos.id} className="border-border/50 bg-card/50">
@@ -180,10 +187,27 @@ const SellAssetDialog = ({ open, onOpenChange, onSuccess, metalType = "gold" }: 
                                                     <div className="text-xs text-muted-foreground">
                                                         تاريخ الشراء: {format(new Date(pos.created_at), "dd MMM yyyy", { locale: ar })}
                                                     </div>
+                                                    {isLocked && (
+                                                        <div className="text-xs text-amber-500 mt-1 flex items-center gap-1 font-medium">
+                                                            <AlertCircle className="w-3 h-3" />
+                                                            فترة الحظر سارية (خصم 20%)
+                                                        </div>
+                                                    )}
                                                 </div>
                                                 <div className="text-left">
                                                     <div className="font-mono font-bold text-primary">
-                                                        {currentValue.toLocaleString(undefined, { maximumFractionDigits: 2 })} ج.م
+                                                        {isLocked ? (
+                                                            <div className="flex flex-col items-end">
+                                                                <span className="line-through text-muted-foreground text-xs">
+                                                                    {currentValue.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                                                                </span>
+                                                                <span className="text-destructive font-bold">
+                                                                    {netAmount.toLocaleString(undefined, { maximumFractionDigits: 2 })} ج.م
+                                                                </span>
+                                                            </div>
+                                                        ) : (
+                                                            <span>{currentValue.toLocaleString(undefined, { maximumFractionDigits: 2 })} ج.م</span>
+                                                        )}
                                                     </div>
                                                     <div className={`text-xs ${isPositive ? 'text-green-500' : 'text-red-500'} flex items-center justify-end gap-1`}>
                                                         {isPositive ? '+' : ''}{pl.toLocaleString(undefined, { maximumFractionDigits: 2 })} ج.م
@@ -192,10 +216,11 @@ const SellAssetDialog = ({ open, onOpenChange, onSuccess, metalType = "gold" }: 
                                                 </div>
                                             </div>
 
-                                            {/* Note about lock if applicable - but user can usually force sell? My RPC logic checks 'active' or 'matured'. It doesn't block locked, but usually there's a fee? 
-                                                My RPC logic had `v_is_early_exit`. I didn't implement fee logic yet to keep it simple as requested. 
-                                                So enabling sell button always. 
-                                            */}
+                                            {isLocked && (
+                                                <div className="bg-destructive/10 border border-destructive/20 rounded p-2 text-xs text-destructive">
+                                                    <span className="font-bold">تنبيه:</span> سيتم خصم {penaltyAmount.toLocaleString(undefined, { maximumFractionDigits: 2 })} ج.م (20%) بسبب البيع المبكر قبل انتهاء فترة الحظر ({format(new Date(pos.lock_until), "dd MMM yyyy", { locale: ar })}).
+                                                </div>
+                                            )}
 
                                             <Button
                                                 onClick={() => handleSell(pos)}
