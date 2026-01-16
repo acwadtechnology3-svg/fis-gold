@@ -76,10 +76,37 @@ const Auth = () => {
 
   const isSigningUp = useRef(false);
 
+  // Check for errors in URL (e.g. from OAuth redirect)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const error = params.get('error');
+    const errorDescription = params.get('error_description');
+    if (error) {
+      toast({
+        variant: "destructive",
+        title: "Authentication Error",
+        description: errorDescription || error,
+      });
+    }
+
+    // Also check hash for error (Supabase sometimes returns errors in hash)
+    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    const hashError = hashParams.get('error');
+    const hashErrorDesc = hashParams.get('error_description');
+    if (hashError) {
+      toast({
+        variant: "destructive",
+        title: "Authentication Error",
+        description: hashErrorDesc || hashError,
+      });
+    }
+  }, []);
+
   // Check profile completion after Google OAuth callback
   useEffect(() => {
     const checkProfileAndRedirect = async () => {
       if (!user || isSigningUp.current) return;
+      // ... (rest of logic)
 
       try {
         const { data: profile, error } = await supabase
