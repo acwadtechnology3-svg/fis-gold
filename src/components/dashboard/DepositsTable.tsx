@@ -75,11 +75,11 @@ const DepositsTable = ({ deposits, isLoading }: DepositsTableProps) => {
                 {deposits.map((deposit) => (
                   <TableRow key={deposit.id}>
                     <TableCell className="font-medium">
-                      {deposit.amount.toLocaleString("ar-EG")} ج.م
+                      {(deposit.amount ?? 0).toLocaleString("ar-EG")} ج.م
                     </TableCell>
                     <TableCell>{packageLabels[deposit.package_type] || deposit.package_type}</TableCell>
                     <TableCell>
-                      {deposit.gold_grams 
+                      {deposit.gold_grams
                         ? deposit.gold_grams.toLocaleString("ar-EG", { maximumFractionDigits: 4 })
                         : "-"}
                     </TableCell>

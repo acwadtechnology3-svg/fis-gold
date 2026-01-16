@@ -132,7 +132,7 @@ export const AdminWithdrawalsTable = ({
                         ? `${withdrawal.grams.toLocaleString("ar-EG", { maximumFractionDigits: 4 })} جرام`
                         : "-"}
                     </TableCell>
-                    <TableCell>{withdrawal.amount.toLocaleString("ar-EG")} ج.م</TableCell>
+                    <TableCell>{(withdrawal.amount ?? 0).toLocaleString("ar-EG")} ج.م</TableCell>
                     <TableCell className="max-w-[200px]">
                       {withdrawal.notes ? (
                         <div className="text-sm text-muted-foreground truncate" title={withdrawal.notes}>
@@ -192,7 +192,7 @@ export const AdminWithdrawalsTable = ({
             <p className="text-muted-foreground">
               هل تريد الموافقة على سحب {approveDialog?.grams
                 ? `${approveDialog.grams.toLocaleString("ar-EG", { maximumFractionDigits: 4 })} جرام ${approveDialog.withdrawal_type === "gold" ? "ذهب" : approveDialog.withdrawal_type === "silver" ? "فضة" : ""}`
-                : `${approveDialog?.amount.toLocaleString("ar-EG")} ج.م`}؟
+                : `${(approveDialog?.amount ?? 0).toLocaleString("ar-EG")} ج.م`}؟
             </p>
             {approveDialog?.notes && (
               <div className="bg-muted/50 p-3 rounded-lg">

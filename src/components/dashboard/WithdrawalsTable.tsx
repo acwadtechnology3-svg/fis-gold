@@ -76,16 +76,16 @@ const WithdrawalsTable = ({ withdrawals, isLoading }: WithdrawalsTableProps) => 
                 {withdrawals.map((withdrawal) => (
                   <TableRow key={withdrawal.id}>
                     <TableCell className="font-medium">
-                      {withdrawal.amount.toLocaleString("ar-EG")} ج.م
+                      {(withdrawal.amount ?? 0).toLocaleString("ar-EG")} ج.م
                     </TableCell>
                     <TableCell>{typeLabels[withdrawal.withdrawal_type] || withdrawal.withdrawal_type}</TableCell>
                     <TableCell className="text-destructive">
-                      {withdrawal.fee_amount 
+                      {withdrawal.fee_amount
                         ? `-${withdrawal.fee_amount.toLocaleString("ar-EG")} ج.م`
                         : "-"}
                     </TableCell>
                     <TableCell className="text-green-600">
-                      {withdrawal.net_amount 
+                      {withdrawal.net_amount
                         ? withdrawal.net_amount.toLocaleString("ar-EG") + " ج.م"
                         : "-"}
                     </TableCell>
