@@ -67,11 +67,18 @@ function checkRateLimit(key: string, limit: number, windowMs: number): boolean {
     return true;
 }
 
+// CORS headers
+const corsHeaders = {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Authorization, Content-Type, X-Idempotency-Key, x-client-info, apikey"
+};
+
 // Standard error response
 function errorResponse(message: string, status: number = 400, details?: any) {
     return new Response(
         JSON.stringify({ success: false, error: message, details }),
-        { status, headers: { "Content-Type": "application/json" } }
+        { status, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
 }
 
@@ -79,7 +86,7 @@ function errorResponse(message: string, status: number = 400, details?: any) {
 function successResponse(data: any, status: number = 200) {
     return new Response(
         JSON.stringify({ success: true, data }),
-        { status, headers: { "Content-Type": "application/json" } }
+        { status, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
 }
 
@@ -756,7 +763,6 @@ async function handleBuyGold(req: Request): Promise<Response> {
         .from("gold_price_snapshots")
         .select("*")
         .eq("id", snapshot_id)
-        .eq("user_id", user.id)
         .single();
 
     if (snapshotError || !snapshot) {
@@ -767,7 +773,7 @@ async function handleBuyGold(req: Request): Promise<Response> {
         return errorResponse("Snapshot already used", 400);
     }
 
-    if (new Date(snapshot.expires_at) < new Date()) {
+    if (snapshot.valid_until && new Date(snapshot.valid_until) < new Date()) {
         return errorResponse("Snapshot expired", 400);
     }
 
