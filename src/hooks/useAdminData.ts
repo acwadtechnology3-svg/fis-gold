@@ -48,6 +48,7 @@ export interface AdminWithdrawal {
   processed_at: string | null;
   user_email?: string;
   user_name?: string;
+  user_phone?: string;
 }
 
 export const useAdminData = () => {
@@ -163,7 +164,7 @@ export const useAdminData = () => {
         .order("created_at", { ascending: false }),
       supabase
         .from("profiles")
-        .select("id, full_name")
+        .select("id, full_name, phone")
     ]);
 
     if (withdrawalsResult.error) {
@@ -179,6 +180,7 @@ export const useAdminData = () => {
     const withdrawalsWithUsers = data.map((withdrawal) => ({
       ...withdrawal,
       user_name: profilesMap.get(withdrawal.user_id) || "غير معروف",
+      user_phone: (profiles.find(p => p.id === withdrawal.user_id) as any)?.phone || null,
     }));
 
     setWithdrawals(withdrawalsWithUsers);
@@ -304,7 +306,7 @@ export const useAdminData = () => {
     return true;
   };
 
-  const approveWithdrawal = async (withdrawalId: string) => {
+  const approveWithdrawal = async (withdrawalId: string, proofImageUrl?: string) => {
     const withdrawal = withdrawals.find((w) => w.id === withdrawalId);
 
     const { data: success, error } = await supabase.rpc('approve_withdrawal_request', {
@@ -316,6 +318,18 @@ export const useAdminData = () => {
       console.error("Error approving withdrawal:", error);
       toast.error("حدث خطأ في الموافقة على السحب");
       return false;
+    }
+
+    if (proofImageUrl) {
+      const { error: updateError } = await supabase
+        .from("withdrawals")
+        .update({ proof_image: proofImageUrl } as any)
+        .eq("id", withdrawalId);
+
+      if (updateError) {
+        console.error("Error updating proof image:", updateError);
+        toast.error("تم الموافقة ولكن فشل حفظ صورة الإثبات");
+      }
     }
 
     await supabase.rpc("log_admin_activity", {
