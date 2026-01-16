@@ -1292,13 +1292,44 @@ serve(async (req: Request) => {
             headers: {
                 "Access-Control-Allow-Origin": "*",
                 "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-                "Access-Control-Allow-Headers": "Authorization, Content-Type, X-Idempotency-Key"
+                "Access-Control-Allow-Headers": "Authorization, Content-Type, X-Idempotency-Key, x-client-info, apikey"
             }
         });
     }
 
     try {
-        // Route matching
+        // Support action-based routing from supabase.functions.invoke()
+        if (method === "POST" && (path === "/" || path === "/wallet-api" || path === "")) {
+            const body = await req.json();
+            const action = body.action;
+
+            // Create a new request with the body
+            const newReq = new Request(req.url, {
+                method: "POST",
+                headers: req.headers,
+                body: JSON.stringify(body)
+            });
+
+            // Route to appropriate handler based on action
+            switch (action) {
+                case "buy_gold":
+                    return await handleBuyGold(newReq);
+                case "withdraw":
+                    return await handleWithdrawRequest(newReq);
+                case "forced_withdraw":
+                    return await handleForcedWithdrawRequest(newReq);
+                case "deposit_initiate":
+                    return await handleDepositInitiate(newReq);
+                case "get_balance":
+                    return await handleGetBalance(newReq);
+                case "get_gold_price":
+                    return await handleGetGoldPrice(newReq);
+                default:
+                    return errorResponse(`Unknown action: ${action}`, 400);
+            }
+        }
+
+        // Path-based routing (original)
         if (method === "POST" && path === "/wallet/deposit/initiate") {
             return await handleDepositInitiate(req);
         }
