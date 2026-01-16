@@ -264,6 +264,7 @@ export const AdminBanners = () => {
                 <Table>
                     <TableHeader>
                         <TableRow>
+                            <TableHead>الصورة</TableHead>
                             <TableHead>العنوان</TableHead>
                             <TableHead>الوصف</TableHead>
                             <TableHead>الحالة</TableHead>
@@ -286,6 +287,19 @@ export const AdminBanners = () => {
                         ) : (
                             banners.map((banner) => (
                                 <TableRow key={banner.id}>
+                                    <TableCell>
+                                        {banner.image_url ? (
+                                            <img
+                                                src={banner.image_url}
+                                                alt={banner.title}
+                                                className="w-16 h-10 object-cover rounded"
+                                            />
+                                        ) : (
+                                            <div className="w-16 h-10 bg-gray-100 rounded flex items-center justify-center text-xs text-muted-foreground">
+                                                لا توجد
+                                            </div>
+                                        )}
+                                    </TableCell>
                                     <TableCell className="font-medium">{banner.title}</TableCell>
                                     <TableCell>{banner.description}</TableCell>
                                     <TableCell>

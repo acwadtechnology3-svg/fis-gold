@@ -241,6 +241,7 @@ export const AdminPartners = () => {
                 <Table>
                     <TableHeader>
                         <TableRow>
+                            <TableHead>الشعار</TableHead>
                             <TableHead>الاسم</TableHead>
                             <TableHead>الموقع الإلكتروني</TableHead>
                             <TableHead>الحالة</TableHead>
@@ -263,6 +264,19 @@ export const AdminPartners = () => {
                         ) : (
                             partners.map((partner) => (
                                 <TableRow key={partner.id}>
+                                    <TableCell>
+                                        {partner.logo_url ? (
+                                            <img
+                                                src={partner.logo_url}
+                                                alt={partner.name}
+                                                className="w-12 h-12 object-contain rounded border bg-white"
+                                            />
+                                        ) : (
+                                            <div className="w-12 h-12 bg-gray-100 rounded border flex items-center justify-center text-xs text-muted-foreground">
+                                                لا يوجد
+                                            </div>
+                                        )}
+                                    </TableCell>
                                     <TableCell className="font-medium">{partner.name}</TableCell>
                                     <TableCell className="text-left dir-ltr">{partner.website_url || "-"}</TableCell>
                                     <TableCell>
