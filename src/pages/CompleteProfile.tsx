@@ -112,13 +112,31 @@ const CompleteProfile = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) return;
+    if (!user) {
+      toast({
+        variant: "destructive",
+        title: "غير مسجل",
+        description: "يرجى تسجيل الدخول أولاً",
+      });
+      return;
+    }
 
+    // Validate text fields
     if (!firstName || !lastName || !phone || !walletType) {
       toast({
         variant: "destructive",
         title: "خطأ",
-        description: "يرجى ملء جميع الحقول المطلوبة",
+        description: "يرجى ملء جميع الحقول المطلوبة (الاسم، الهاتف، المحفظة)",
+      });
+      return;
+    }
+
+    // Validate images
+    if (!profileImage || !idFront || !idBack) {
+      toast({
+        variant: "destructive",
+        title: "خطأ",
+        description: "يرجى رفع جميع الصور المطلوبة (الملف الشخصي، الهوية وجه وظهر)",
       });
       return;
     }
@@ -142,24 +160,26 @@ const CompleteProfile = () => {
         idBackUrl = await uploadFile(idBack, 'ids');
       }
 
-      const updateData: any = {
+      const profileData: any = {
+        id: user.id, // Ensure ID is included for upsert
         first_name: firstName,
         last_name: lastName,
         full_name: `${firstName} ${lastName}`,
         phone: phone,
         wallet_type: walletType,
         wallet_number: walletNumber,
-        is_active: false, // Set to false - waiting for admin verification
+        is_active: false,
+        updated_at: new Date().toISOString(),
       };
 
-      if (avatarUrl) updateData.avatar_url = avatarUrl;
-      if (idFrontUrl) updateData.id_front_url = idFrontUrl;
-      if (idBackUrl) updateData.id_back_url = idBackUrl;
+      if (avatarUrl) profileData.avatar_url = avatarUrl;
+      if (idFrontUrl) profileData.id_front_url = idFrontUrl;
+      if (idBackUrl) profileData.id_back_url = idBackUrl;
 
+      // Use upsert to handle both insert (if row missing) and update
       const { error } = await supabase
         .from('profiles')
-        .update(updateData)
-        .eq('id', user.id);
+        .upsert(profileData);
 
       if (error) throw error;
 
@@ -168,7 +188,6 @@ const CompleteProfile = () => {
         description: "سيتم مراجعة بياناتك وتفعيل حسابك قريباً",
       });
 
-      // Don't navigate - show waiting message instead
       setProfileSubmitted(true);
 
     } catch (error: any) {
