@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,41 +16,13 @@ interface NewDepositDialogProps {
   showTrigger?: boolean;
 }
 
-// Company wallet numbers - these can be moved to admin settings later
-const COMPANY_WALLETS = {
-  vodafone_cash: {
-    label: "فودافون كاش",
-    number: "01027136059",
-    instructions: "أرسل المبلغ إلى هذا الرقم",
-  },
-  orange_cash: {
-    label: "أورنج كاش",
-    number: "01027136059",
-    instructions: "أرسل المبلغ إلى هذا الرقم",
-  },
-  etisalat_cash: {
-    label: "اتصالات كاش",
-    number: "01027136059",
-    instructions: "أرسل المبلغ إلى هذا الرقم",
-  },
-  we_pay: {
-    label: "وي باي",
-    number: "01027136059",
-    instructions: "أرسل المبلغ إلى هذا الرقم",
-  },
-  instapay: {
-    label: "انستا باي",
-    number: "eslam@instapay.eg",
-    instructions: "حول المبلغ إلى حساب انستا باي",
-    link: "https://ipn.eg/S/eslamabd01027136/instapay/KXuORf",
-  },
-  bank_transfer: {
-    label: "حساب بنكي",
-    number: "EG1234567890123456789012345",
-    bankName: "البنك الأهلي المصري",
-    instructions: "حول المبلغ إلى الحساب البنكي التالي",
-  },
-};
+interface PaymentMethod {
+  label: string;
+  number: string;
+  instructions: string;
+  bankName?: string;
+  link?: string;
+}
 
 const NewDepositDialog = ({ onSuccess, open: controlledOpen, onOpenChange: setControlledOpen, showTrigger = true }: NewDepositDialogProps) => {
   const [internalOpen, setInternalOpen] = useState(false);
@@ -65,10 +37,82 @@ const NewDepositDialog = ({ onSuccess, open: controlledOpen, onOpenChange: setCo
   const [isLoading, setIsLoading] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [copiedNumber, setCopiedNumber] = useState(false);
+  const [companyWallet, setCompanyWallet] = useState("");
+  const [companyInstapay, setCompanyInstapay] = useState("");
   const { user } = useAuth();
   const { toast } = useToast();
 
-  const selectedWallet = paymentMethod ? COMPANY_WALLETS[paymentMethod as keyof typeof COMPANY_WALLETS] : null;
+  // Fetch company wallet settings from database
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("system_settings")
+          .select("key, value")
+          .in("key", ["company_wallet_number", "company_instapay_address"]);
+
+        if (error) throw error;
+
+        data?.forEach((setting: any) => {
+          const value = typeof setting.value === 'string'
+            ? setting.value.replace(/"/g, '')
+            : setting.value;
+          if (setting.key === "company_wallet_number") {
+            setCompanyWallet(value || "01027136059");
+          } else if (setting.key === "company_instapay_address") {
+            setCompanyInstapay(value || "fisgold@instapay");
+          }
+        });
+      } catch (error) {
+        console.error("Error fetching payment settings:", error);
+        // Use defaults if fetch fails
+        setCompanyWallet("01027136059");
+        setCompanyInstapay("fisgold@instapay");
+      }
+    };
+
+    if (open) {
+      fetchSettings();
+    }
+  }, [open]);
+
+  // Build company wallets object dynamically
+  const COMPANY_WALLETS: Record<string, PaymentMethod> = {
+    vodafone_cash: {
+      label: "فودافون كاش",
+      number: companyWallet,
+      instructions: "أرسل المبلغ إلى هذا الرقم",
+    },
+    orange_cash: {
+      label: "أورنج كاش",
+      number: companyWallet,
+      instructions: "أرسل المبلغ إلى هذا الرقم",
+    },
+    etisalat_cash: {
+      label: "اتصالات كاش",
+      number: companyWallet,
+      instructions: "أرسل المبلغ إلى هذا الرقم",
+    },
+    we_pay: {
+      label: "وي باي",
+      number: companyWallet,
+      instructions: "أرسل المبلغ إلى هذا الرقم",
+    },
+    instapay: {
+      label: "انستا باي",
+      number: companyInstapay,
+      instructions: "حول المبلغ إلى حساب انستا باي",
+      link: `https://ipn.eg/S/${companyInstapay.replace('@instapay', '')}/instapay/KXuORf`,
+    },
+    bank_transfer: {
+      label: "حساب بنكي",
+      number: companyWallet,
+      bankName: "البنك الأهلي المصري",
+      instructions: "حول المبلغ إلى الحساب البنكي التالي",
+    },
+  };
+
+  const selectedWallet = paymentMethod ? COMPANY_WALLETS[paymentMethod] : null;
 
   const handleCopyNumber = async () => {
     if (!selectedWallet) return;

@@ -80,8 +80,8 @@ const InvestmentPlans = () => {
                         <Card
                             key={index}
                             className={`relative overflow-hidden border-2 transition-all duration-300 hover:-translate-y-2 ${plan.popular
-                                    ? "border-primary shadow-gold-lg scale-105 z-10"
-                                    : "border-border/50 hover:border-primary/50"
+                                ? "border-primary shadow-gold-lg scale-105 z-10"
+                                : "border-border/50 hover:border-primary/50"
                                 } glass-dark`}
                         >
                             {plan.popular && (
@@ -126,7 +126,7 @@ const InvestmentPlans = () => {
                                 <Button
                                     className={`w-full font-bold text-lg h-12 ${plan.popular ? "bg-gold-gradient text-secondary hover:shadow-gold" : ""
                                         }`}
-                                    onClick={() => navigate('/auth')}
+                                    onClick={() => navigate('/dashboard')}
                                 >
                                     اشترك الآن
                                 </Button>
