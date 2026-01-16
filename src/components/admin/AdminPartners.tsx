@@ -129,112 +129,115 @@ export const AdminPartners = () => {
 
     return (
         <div className="space-y-6">
-            <div className="flex justify-between items-center">
-                <h2 className="text-xl font-bold">إدارة شركاء النجاح</h2>
-                <Dialog open={isDialogOpen} onOpenChange={(open) => {
-                    setIsDialogOpen(open);
-                    if (!open) resetForm();
-                }}>
-                    <DialogTrigger asChild>
-                        <Button className="bg-primary text-primary-foreground">
-                            <Plus className="w-4 h-4 ml-2" />
-                            إضافة شريك جديد
-                        </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                        <DialogHeader>
-                            <DialogTitle>{editingPartner ? "تعديل الشريك" : "إضافة شريك جديد"}</DialogTitle>
-                        </DialogHeader>
-                        <form onSubmit={handleSubmit} className="space-y-4">
-                            <div className="space-y-2">
-                                <Label>اسم الشريك</Label>
-                                <Input
-                                    value={formData.name}
-                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                    required
-                                />
-                            </div>
-
-                            <div className="space-y-2">
-                                <Label>شعار الشريك (اختياري)</Label>
-                                <Input
-                                    type="file"
-                                    accept="image/*"
-                                    onChange={async (e) => {
-                                        const file = e.target.files?.[0];
-                                        if (!file) return;
-
-                                        try {
-                                            setUploading(true);
-                                            const fileExt = file.name.split('.').pop();
-                                            const fileName = `partner_${Math.random()}.${fileExt}`;
-                                            const filePath = `${fileName}`;
-
-                                            const { error: uploadError } = await supabase.storage
-                                                .from('marketing')
-                                                .upload(filePath, file);
-
-                                            if (uploadError) {
-                                                throw uploadError;
-                                            }
-
-                                            const { data: { publicUrl } } = supabase.storage
-                                                .from('marketing')
-                                                .getPublicUrl(filePath);
-
-                                            setFormData({ ...formData, logo_url: publicUrl });
-                                            toast.success("تم رفع الشعار بنجاح");
-                                        } catch (error) {
-                                            console.error("Error uploading logo:", error);
-                                            toast.error("فشل رفع الشعار");
-                                        } finally {
-                                            setUploading(false);
-                                        }
-                                    }}
-                                    disabled={uploading}
-                                />
-                                {uploading && <p className="text-sm text-muted-foreground">جاري الرفع...</p>}
-                                {formData.logo_url && (
-                                    <div className="mt-2 relative w-32 h-20 rounded-lg overflow-hidden border bg-gray-100 flex items-center justify-center">
-                                        <img
-                                            src={formData.logo_url}
-                                            alt="Preview"
-                                            className="max-w-full max-h-full object-contain p-2"
-                                        />
-                                        <Button
-                                            type="button"
-                                            variant="destructive"
-                                            size="icon"
-                                            className="absolute top-1 right-1 h-5 w-5"
-                                            onClick={() => setFormData({ ...formData, logo_url: "" })}
-                                        >
-                                            <Trash2 className="w-3 h-3" />
-                                        </Button>
-                                    </div>
-                                )}
-                            </div>
-
-                            <div className="space-y-2">
-                                <Label>الموقع الإلكتروني</Label>
-                                <Input
-                                    value={formData.website_url}
-                                    onChange={(e) => setFormData({ ...formData, website_url: e.target.value })}
-                                    dir="ltr"
-                                />
-                            </div>
-                            <div className="flex items-center space-x-2 space-x-reverse">
-                                <Switch
-                                    checked={formData.is_active}
-                                    onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
-                                />
-                                <Label>تفعيل الشريك</Label>
-                            </div>
-                            <Button type="submit" className="w-full" disabled={uploading}>
-                                {editingPartner ? "تحديث" : "إضافة"}
+            <div className="flex items-center justify-between">
+                <div className="w-1/3"></div>
+                <h2 className="text-xl font-bold text-center w-1/3">إدارة شركاء النجاح</h2>
+                <div className="w-1/3 flex justify-end">
+                    <Dialog open={isDialogOpen} onOpenChange={(open) => {
+                        setIsDialogOpen(open);
+                        if (!open) resetForm();
+                    }}>
+                        <DialogTrigger asChild>
+                            <Button className="bg-primary text-primary-foreground">
+                                <Plus className="w-4 h-4 ml-2" />
+                                إضافة شريك جديد
                             </Button>
-                        </form>
-                    </DialogContent>
-                </Dialog>
+                        </DialogTrigger>
+                        <DialogContent>
+                            <DialogHeader>
+                                <DialogTitle>{editingPartner ? "تعديل الشريك" : "إضافة شريك جديد"}</DialogTitle>
+                            </DialogHeader>
+                            <form onSubmit={handleSubmit} className="space-y-4">
+                                <div className="space-y-2">
+                                    <Label>اسم الشريك</Label>
+                                    <Input
+                                        value={formData.name}
+                                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                        required
+                                    />
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label>شعار الشريك (اختياري)</Label>
+                                    <Input
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={async (e) => {
+                                            const file = e.target.files?.[0];
+                                            if (!file) return;
+
+                                            try {
+                                                setUploading(true);
+                                                const fileExt = file.name.split('.').pop();
+                                                const fileName = `partner_${Math.random()}.${fileExt}`;
+                                                const filePath = `${fileName}`;
+
+                                                const { error: uploadError } = await supabase.storage
+                                                    .from('marketing')
+                                                    .upload(filePath, file);
+
+                                                if (uploadError) {
+                                                    throw uploadError;
+                                                }
+
+                                                const { data: { publicUrl } } = supabase.storage
+                                                    .from('marketing')
+                                                    .getPublicUrl(filePath);
+
+                                                setFormData({ ...formData, logo_url: publicUrl });
+                                                toast.success("تم رفع الشعار بنجاح");
+                                            } catch (error) {
+                                                console.error("Error uploading logo:", error);
+                                                toast.error("فشل رفع الشعار");
+                                            } finally {
+                                                setUploading(false);
+                                            }
+                                        }}
+                                        disabled={uploading}
+                                    />
+                                    {uploading && <p className="text-sm text-muted-foreground">جاري الرفع...</p>}
+                                    {formData.logo_url && (
+                                        <div className="mt-2 relative w-32 h-20 rounded-lg overflow-hidden border bg-gray-100 flex items-center justify-center">
+                                            <img
+                                                src={formData.logo_url}
+                                                alt="Preview"
+                                                className="max-w-full max-h-full object-contain p-2"
+                                            />
+                                            <Button
+                                                type="button"
+                                                variant="destructive"
+                                                size="icon"
+                                                className="absolute top-1 right-1 h-5 w-5"
+                                                onClick={() => setFormData({ ...formData, logo_url: "" })}
+                                            >
+                                                <Trash2 className="w-3 h-3" />
+                                            </Button>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label>الموقع الإلكتروني</Label>
+                                    <Input
+                                        value={formData.website_url}
+                                        onChange={(e) => setFormData({ ...formData, website_url: e.target.value })}
+                                        dir="ltr"
+                                    />
+                                </div>
+                                <div className="flex items-center space-x-2 space-x-reverse">
+                                    <Switch
+                                        checked={formData.is_active}
+                                        onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
+                                    />
+                                    <Label>تفعيل الشريك</Label>
+                                </div>
+                                <Button type="submit" className="w-full" disabled={uploading}>
+                                    {editingPartner ? "تحديث" : "إضافة"}
+                                </Button>
+                            </form>
+                        </DialogContent>
+                    </Dialog>
+                </div>
             </div>
 
             <div className="bg-card rounded-lg border shadow-sm">

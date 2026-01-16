@@ -311,11 +311,15 @@ export const AdminProducts = () => {
   return (
     <>
       <Card className="glass-dark border-primary/20 shadow-gold">
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="flex items-center gap-2">
             <Package className="w-5 h-5" />
             إدارة المنتجات
           </CardTitle>
+          <Button onClick={handleAdd} className="bg-gold-gradient hover:bg-gold-gradient-hover text-black">
+            <Plus className="w-4 h-4 ml-2" />
+            إضافة منتج
+          </Button>
         </CardHeader>
         <CardContent>
           {/* Filters */}

@@ -60,7 +60,7 @@ const PartnersCarousel = () => {
             <div className="absolute left-0 top-0 bottom-0 w-32 bg-gradient-to-r from-background via-background/80 to-transparent z-10 pointer-events-none" />
             <div className="absolute right-0 top-0 bottom-0 w-32 bg-gradient-to-l from-background via-background/80 to-transparent z-10 pointer-events-none" />
 
-            <div className="container mx-auto px-4 mb-8 text-center">
+            <div className="container mx-auto px-4 mb-8 text-center flex flex-col items-center justify-center">
                 <h2 className="text-3xl font-bold text-gold-gradient mb-2">شركاء النجاح</h2>
                 <p className="text-muted-foreground">نفتخر بشراكتنا مع كبرى المؤسسات</p>
             </div>
