@@ -81,26 +81,30 @@ const Auth = () => {
     const params = new URLSearchParams(window.location.search);
     const error = params.get('error');
     const errorDescription = params.get('error_description');
-    if (error) {
-      toast({
-        variant: "destructive",
-        title: "Authentication Error",
-        description: errorDescription || error,
-      });
-    }
-
+    
     // Also check hash for error (Supabase sometimes returns errors in hash)
     const hashParams = new URLSearchParams(window.location.hash.substring(1));
     const hashError = hashParams.get('error');
     const hashErrorDesc = hashParams.get('error_description');
-    if (hashError) {
+    
+    // Clean up URL after processing errors
+    const hasError = error || hashError;
+    
+    if (hasError) {
+      const errorMsg = decodeURIComponent(errorDescription || hashErrorDesc || error || hashError || 'Unknown error');
       toast({
         variant: "destructive",
-        title: "Authentication Error",
-        description: hashErrorDesc || hashError,
+        title: "خطأ في المصادقة",
+        description: errorMsg.includes('Unable to exchange external code') 
+          ? "فشل في تبادل رمز المصادقة. يرجى التحقق من إعدادات Google OAuth في Supabase."
+          : errorMsg,
       });
+      
+      // Clean up URL parameters after showing error
+      const cleanUrl = window.location.pathname;
+      window.history.replaceState({}, document.title, cleanUrl);
     }
-  }, []);
+  }, [toast]);
 
   // Check profile completion after Google OAuth callback
   useEffect(() => {

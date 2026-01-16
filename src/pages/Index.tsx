@@ -17,6 +17,29 @@ const Index = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  // Handle OAuth errors from URL
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    const error = params.get('error') || hashParams.get('error');
+    const errorDescription = params.get('error_description') || hashParams.get('error_description');
+    
+    if (error) {
+      const errorMsg = decodeURIComponent(errorDescription || error || 'Unknown error');
+      toast({
+        variant: "destructive",
+        title: "خطأ في المصادقة",
+        description: errorMsg.includes('Unable to exchange external code') 
+          ? "فشل في تبادل رمز المصادقة. يرجى التحقق من إعدادات Google OAuth في Supabase."
+          : errorMsg,
+      });
+      
+      // Clean up URL after showing error
+      const cleanUrl = window.location.pathname;
+      window.history.replaceState({}, document.title, cleanUrl);
+    }
+  }, [toast]);
+
   useEffect(() => {
     const checkProfileAndRedirect = async () => {
       if (!user || loading) return;

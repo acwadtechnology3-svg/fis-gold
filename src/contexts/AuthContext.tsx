@@ -32,14 +32,60 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Handle OAuth callback - check for code in URL hash
+    const handleOAuthCallback = async () => {
+      const hashParams = new URLSearchParams(window.location.hash.substring(1));
+      const accessToken = hashParams.get('access_token');
+      const error = hashParams.get('error');
+      
+      // If there's an error in the hash, it's already been handled
+      if (error) {
+        setLoading(false);
+        return;
+      }
+
+      // If we have an access token, Supabase should handle it automatically
+      // But we need to ensure the session is properly set
+      if (accessToken) {
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session) {
+            setSession(session);
+            setUser(session.user);
+          }
+        } catch (err) {
+          console.error('Error handling OAuth callback:', err);
+        }
+      }
+    };
+
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        setLoading(false);
+      async (event, session) => {
+        // Handle OAuth callback events
+        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+          setSession(session);
+          setUser(session?.user ?? null);
+          setLoading(false);
+          
+          // Clean up URL hash after successful OAuth
+          if (window.location.hash.includes('access_token')) {
+            window.history.replaceState(null, '', window.location.pathname + window.location.search);
+          }
+        } else if (event === 'SIGNED_OUT') {
+          setSession(null);
+          setUser(null);
+          setLoading(false);
+        } else {
+          setSession(session);
+          setUser(session?.user ?? null);
+          setLoading(false);
+        }
       }
     );
+
+    // Handle OAuth callback on mount
+    handleOAuthCallback();
 
     // THEN check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -76,11 +122,17 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   };
 
   const signInWithGoogle = async () => {
-    const redirectUrl = window.location.origin;
+    // Use the root URL - this must match the redirect URL configured in Supabase Dashboard
+    // Go to: Supabase Dashboard > Authentication > URL Configuration > Redirect URLs
+    const redirectUrl = `${window.location.origin}/`;
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
         redirectTo: redirectUrl,
+        queryParams: {
+          access_type: 'offline',
+          prompt: 'consent',
+        },
       },
     });
     return { error };

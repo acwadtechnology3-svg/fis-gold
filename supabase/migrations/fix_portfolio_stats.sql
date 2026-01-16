@@ -34,7 +34,7 @@ BEGIN
 
     SELECT COALESCE(SUM(amount), 0) INTO v_approved_deposits
     FROM deposits
-    WHERE user_id = p_user_id AND status = 'completed'; -- or 'active'/'approved' depending on deposit status enum
+    WHERE user_id = p_user_id AND status IN ('completed', 'approved'); -- Fixed: Include 'approved' status
 
     -- 3. Calculate Withdrawals
     SELECT COALESCE(SUM(amount), 0) INTO v_pending_withdrawals
