@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { Plus, Loader2, Upload, X } from "lucide-react";
+import { Plus, Loader2, Upload, X, Copy, CheckCircle, AlertCircle } from "lucide-react";
 
 interface NewDepositDialogProps {
   onSuccess: () => void;
@@ -15,6 +15,42 @@ interface NewDepositDialogProps {
   onOpenChange?: (open: boolean) => void;
   showTrigger?: boolean;
 }
+
+// Company wallet numbers - these can be moved to admin settings later
+const COMPANY_WALLETS = {
+  vodafone_cash: {
+    label: "فودافون كاش",
+    number: "01027136059",
+    instructions: "أرسل المبلغ إلى هذا الرقم",
+  },
+  orange_cash: {
+    label: "أورنج كاش",
+    number: "01027136059",
+    instructions: "أرسل المبلغ إلى هذا الرقم",
+  },
+  etisalat_cash: {
+    label: "اتصالات كاش",
+    number: "01027136059",
+    instructions: "أرسل المبلغ إلى هذا الرقم",
+  },
+  we_pay: {
+    label: "وي باي",
+    number: "01027136059",
+    instructions: "أرسل المبلغ إلى هذا الرقم",
+  },
+  instapay: {
+    label: "انستا باي",
+    number: "eslam@instapay.eg",
+    instructions: "حول المبلغ إلى حساب انستا باي",
+    link: "https://ipn.eg/S/eslamabd01027136/instapay/KXuORf",
+  },
+  bank_transfer: {
+    label: "حساب بنكي",
+    number: "EG1234567890123456789012345",
+    bankName: "البنك الأهلي المصري",
+    instructions: "حول المبلغ إلى الحساب البنكي التالي",
+  },
+};
 
 const NewDepositDialog = ({ onSuccess, open: controlledOpen, onOpenChange: setControlledOpen, showTrigger = true }: NewDepositDialogProps) => {
   const [internalOpen, setInternalOpen] = useState(false);
@@ -28,8 +64,30 @@ const NewDepositDialog = ({ onSuccess, open: controlledOpen, onOpenChange: setCo
   const [paymentProofUrl, setPaymentProofUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [copiedNumber, setCopiedNumber] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
+
+  const selectedWallet = paymentMethod ? COMPANY_WALLETS[paymentMethod as keyof typeof COMPANY_WALLETS] : null;
+
+  const handleCopyNumber = async () => {
+    if (!selectedWallet) return;
+    try {
+      await navigator.clipboard.writeText(selectedWallet.number);
+      setCopiedNumber(true);
+      toast({
+        title: "تم النسخ",
+        description: "تم نسخ الرقم بنجاح",
+      });
+      setTimeout(() => setCopiedNumber(false), 2000);
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "خطأ",
+        description: "فشل نسخ الرقم",
+      });
+    }
+  };
 
   const handleFileUpload = async (file: File) => {
     if (!user) return;
@@ -164,7 +222,7 @@ const NewDepositDialog = ({ onSuccess, open: controlledOpen, onOpenChange: setCo
           </Button>
         </DialogTrigger>
       )}
-      <DialogContent className="bg-card border-border/50" aria-describedby="deposit-dialog-desc">
+      <DialogContent className="bg-card border-border/50 max-h-[90vh] overflow-y-auto" aria-describedby="deposit-dialog-desc">
         <DialogHeader>
           <DialogTitle className="text-xl text-gold-gradient">طلب إيداع جديد</DialogTitle>
           <p id="deposit-dialog-desc" className="text-sm text-muted-foreground">
@@ -172,22 +230,13 @@ const NewDepositDialog = ({ onSuccess, open: controlledOpen, onOpenChange: setCo
           </p>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 mt-4">
-          <div className="space-y-2">
-            <Label htmlFor="amount">المبلغ (ج.م)</Label>
-            <Input
-              id="amount"
-              type="number"
-              min="2000"
-              placeholder="الحد الأدنى 2,000 ج.م"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              className="bg-secondary/30 border-border/50"
-              dir="ltr"
-            />
-          </div>
+          {/* Payment Method - First so user can see wallet details */}
           <div className="space-y-2">
             <Label htmlFor="paymentMethod">طريقة الدفع *</Label>
-            <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+            <Select value={paymentMethod} onValueChange={(value) => {
+              setPaymentMethod(value);
+              setCopiedNumber(false);
+            }}>
               <SelectTrigger className="bg-secondary/30 border-border/50">
                 <SelectValue placeholder="اختر طريقة الدفع" />
               </SelectTrigger>
@@ -201,6 +250,82 @@ const NewDepositDialog = ({ onSuccess, open: controlledOpen, onOpenChange: setCo
               </SelectContent>
             </Select>
           </div>
+
+          {/* Show company wallet details when payment method is selected */}
+          {selectedWallet && (
+            <div className="bg-primary/5 border border-primary/20 rounded-lg p-4 space-y-3">
+              <div className="flex items-center gap-2 text-primary">
+                <AlertCircle className="h-4 w-4" />
+                <span className="font-semibold">{selectedWallet.instructions}</span>
+              </div>
+
+              {/* Wallet/Account Number */}
+              <div className="bg-background/50 rounded-lg p-3">
+                <p className="text-xs text-muted-foreground mb-1">
+                  {paymentMethod === "bank_transfer" ? "رقم الحساب البنكي" :
+                    paymentMethod === "instapay" ? "حساب انستا باي" : "رقم المحفظة للإرسال"}
+                </p>
+                <div className="flex items-center justify-between">
+                  <span className="text-lg font-bold font-mono" dir="ltr">{selectedWallet.number}</span>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleCopyNumber}
+                    className="gap-2"
+                  >
+                    {copiedNumber ? (
+                      <>
+                        <CheckCircle className="h-4 w-4 text-green-500" />
+                        تم النسخ
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="h-4 w-4" />
+                        نسخ
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+
+              {/* Bank name for bank transfer */}
+              {paymentMethod === "bank_transfer" && 'bankName' in selectedWallet && (
+                <p className="text-sm text-muted-foreground">
+                  البنك: <span className="font-semibold">{selectedWallet.bankName}</span>
+                </p>
+              )}
+
+              {/* InstaPay link */}
+              {paymentMethod === "instapay" && 'link' in selectedWallet && selectedWallet.link && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full border-primary/30 text-primary hover:bg-primary/10"
+                  onClick={() => window.open(selectedWallet.link, '_blank')}
+                >
+                  فتح رابط انستا باي
+                </Button>
+              )}
+            </div>
+          )}
+
+          {/* Amount */}
+          <div className="space-y-2">
+            <Label htmlFor="amount">المبلغ (ج.م) *</Label>
+            <Input
+              id="amount"
+              type="number"
+              min="2000"
+              placeholder="الحد الأدنى 2,000 ج.م"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              className="bg-secondary/30 border-border/50"
+              dir="ltr"
+            />
+          </div>
+
+          {/* Payment Proof Upload */}
           <div className="space-y-2">
             <Label htmlFor="paymentProof">إثبات الدفع (صورة الإيصال) *</Label>
             {paymentProofUrl ? (
@@ -224,7 +349,7 @@ const NewDepositDialog = ({ onSuccess, open: controlledOpen, onOpenChange: setCo
                 </Button>
               </div>
             ) : (
-              <div className="border-2 border-dashed border-primary/30 rounded-lg p-8 flex flex-col items-center justify-center bg-secondary/30 hover:bg-primary/5 transition-colors">
+              <div className="border-2 border-dashed border-primary/30 rounded-lg p-6 flex flex-col items-center justify-center bg-secondary/30 hover:bg-primary/5 transition-colors">
                 <input
                   type="file"
                   accept="image/*"
@@ -245,20 +370,36 @@ const NewDepositDialog = ({ onSuccess, open: controlledOpen, onOpenChange: setCo
                     <Upload className="w-8 h-8 text-muted-foreground" />
                   )}
                   <span className="text-sm text-muted-foreground">
-                    {isUploading ? "جاري الرفع..." : "اختر ملف إثبات الدفع"}
-                  </span>
-                  <span className="text-xs text-muted-foreground">
-                    PNG, JPG, GIF حتى 5MB
+                    {isUploading ? "جاري الرفع..." : "رفع صورة للمعاملة"}
                   </span>
                 </label>
               </div>
             )}
           </div>
-          <div className="bg-muted/50 p-4 rounded-lg text-sm text-muted-foreground">
-            <p>• سيتم مراجعة طلبك خلال 24-48 ساعة</p>
-            <p>• سعر الذهب عند الموافقة هو السعر المعتمد</p>
-            <p>• يرجى رفع صورة واضحة لإثبات الدفع</p>
+
+          {/* Notes */}
+          <div className="bg-muted/50 p-3 rounded-lg space-y-2">
+            <h4 className="font-semibold text-sm">ملاحظات للعميل</h4>
+            <ul className="text-sm text-muted-foreground space-y-1">
+              <li className="flex items-center gap-2">
+                <CheckCircle className="h-3 w-3 text-green-500" />
+                تأكد من صحة البيانات قبل الإرسال
+              </li>
+              <li className="flex items-center gap-2">
+                <CheckCircle className="h-3 w-3 text-green-500" />
+                قيد المراجعة - سيتم التفعيل خلال 24-48 ساعة
+              </li>
+              <li className="flex items-center gap-2">
+                <CheckCircle className="h-3 w-3 text-green-500" />
+                في حال وجود أي مشكلة يمكنك التواصل مع الدعم الفني مباشرة
+              </li>
+            </ul>
           </div>
+
+          <p className="text-xs text-center text-muted-foreground">
+            سيتم تفعيل الإيداع بعد مراجعة البيانات خلال 24-48 ساعة وسيتواصل معك أحد ممثلي الدعم الفني لتأكيد العملية
+          </p>
+
           <Button
             type="submit"
             className="w-full bg-gold-gradient hover:bg-gold-gradient-hover text-primary-foreground"
@@ -270,7 +411,7 @@ const NewDepositDialog = ({ onSuccess, open: controlledOpen, onOpenChange: setCo
                 جاري الإرسال...
               </>
             ) : (
-              "إرسال الطلب"
+              "رفع وإرسال الطلب"
             )}
           </Button>
         </form>

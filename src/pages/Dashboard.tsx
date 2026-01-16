@@ -168,12 +168,14 @@ const Dashboard = () => {
         />
 
         {/* Wallet + Metal Prices Row */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           <WalletCard balance={summary?.total_invested ?? 0} isLoading={isLoading} />
           <MetalPricesCard />
-          <div className="md:col-span-2 lg:col-span-1">
-            <PortfolioStats summary={summary} isLoading={isLoading} />
-          </div>
+        </div>
+
+        {/* Portfolio Stats Row */}
+        <div className="mb-8">
+          <PortfolioStats summary={summary} isLoading={isLoading} />
         </div>
 
         {/* Investment Logs */}

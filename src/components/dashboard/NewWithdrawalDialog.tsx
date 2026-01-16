@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, AlertCircle } from "lucide-react";
+import { Loader2, AlertCircle, Wallet } from "lucide-react";
 
 interface NewWithdrawalDialogProps {
     open: boolean;
@@ -16,73 +16,82 @@ interface NewWithdrawalDialogProps {
 }
 
 const NewWithdrawalDialog = ({ open, onOpenChange, onSuccess }: NewWithdrawalDialogProps) => {
-    const [metalType, setMetalType] = useState<"gold" | "silver">("gold");
-    const [grams, setGrams] = useState("");
+    const [amount, setAmount] = useState("");
     const [withdrawalMethod, setWithdrawalMethod] = useState("");
+    const [walletNumber, setWalletNumber] = useState("");
     const [notes, setNotes] = useState("");
     const [isLoading, setIsLoading] = useState(false);
-    const [availableGrams, setAvailableGrams] = useState({ gold: 0, silver: 0 });
-    const [loadingAvailable, setLoadingAvailable] = useState(false);
+    const [walletBalance, setWalletBalance] = useState(0);
+    const [loadingBalance, setLoadingBalance] = useState(false);
     const { user } = useAuth();
     const { toast } = useToast();
 
-    // Fetch available grams when dialog opens
+    // Fetch wallet balance when dialog opens
     useEffect(() => {
-        const fetchAvailableGrams = async () => {
+        const fetchWalletBalance = async () => {
             if (!user || !open) return;
-            
-            setLoadingAvailable(true);
+
+            setLoadingBalance(true);
             try {
                 const { data, error } = await supabase
-                    .rpc("get_available_grams", { p_user_id: user.id });
-                
-                if (error) throw error;
-                
-                if (data && data.length > 0) {
-                    setAvailableGrams({
-                        gold: Number(data[0].available_gold_grams) || 0,
-                        silver: Number(data[0].available_silver_grams) || 0,
-                    });
-                }
+                    .from("wallet_accounts")
+                    .select("available_balance")
+                    .eq("user_id", user.id)
+                    .single();
+
+                if (error && error.code !== 'PGRST116') throw error;
+
+                setWalletBalance(Number(data?.available_balance) || 0);
             } catch (error) {
-                console.error("Error fetching available grams:", error);
+                console.error("Error fetching wallet balance:", error);
+                setWalletBalance(0);
             } finally {
-                setLoadingAvailable(false);
+                setLoadingBalance(false);
             }
         };
 
-        fetchAvailableGrams();
+        fetchWalletBalance();
     }, [user, open]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        if (!grams || !metalType || !withdrawalMethod) {
+        if (!amount || !withdrawalMethod) {
             toast({
                 variant: "destructive",
                 title: "خطأ",
-                description: "يرجى ملء جميع الحقول",
+                description: "يرجى ملء جميع الحقول المطلوبة",
             });
             return;
         }
 
-        const gramsNum = parseFloat(grams);
-        if (isNaN(gramsNum) || gramsNum <= 0) {
+        // Require wallet number for electronic methods
+        if ((withdrawalMethod === "vodafone_cash" || withdrawalMethod === "instapay" ||
+            withdrawalMethod === "orange_cash" || withdrawalMethod === "etisalat_cash") && !walletNumber) {
             toast({
                 variant: "destructive",
                 title: "خطأ",
-                description: "عدد الجرامات يجب أن يكون أكبر من 0",
+                description: "يرجى إدخال رقم المحفظة",
             });
             return;
         }
 
-        // Check available grams
-        const available = metalType === "gold" ? availableGrams.gold : availableGrams.silver;
-        if (gramsNum > available) {
+        const amountNum = parseFloat(amount);
+        if (isNaN(amountNum) || amountNum <= 0) {
             toast({
                 variant: "destructive",
                 title: "خطأ",
-                description: `لا يمكنك سحب ${gramsNum} جرام. المتاح: ${available.toFixed(4)} جرام`,
+                description: "المبلغ يجب أن يكون أكبر من 0",
+            });
+            return;
+        }
+
+        // Check wallet balance
+        if (amountNum > walletBalance) {
+            toast({
+                variant: "destructive",
+                title: "خطأ",
+                description: `رصيد المحفظة غير كافي. المتاح: ${walletBalance.toLocaleString("ar-EG")} ج.م`,
             });
             return;
         }
@@ -98,22 +107,20 @@ const NewWithdrawalDialog = ({ open, onOpenChange, onSuccess }: NewWithdrawalDia
 
         setIsLoading(true);
 
-        // Get current metal price to calculate amount
-        const { data: pricesData } = await supabase
-            .rpc("get_latest_metal_prices");
-
-        const metalPrice = pricesData?.find((p: any) => p.metal_type === metalType);
-        const sellPricePerGram = metalPrice?.sell_price_per_gram || 0;
-        const calculatedAmount = gramsNum * sellPricePerGram;
+        // Prepare notes with wallet number
+        const fullNotes = walletNumber
+            ? `طريقة السحب: ${withdrawalMethod}\nرقم المحفظة: ${walletNumber}${notes ? `\nملاحظات: ${notes}` : ''}`
+            : `طريقة السحب: ${withdrawalMethod}${notes ? `\nملاحظات: ${notes}` : ''}`;
 
         const { error } = await supabase.from("withdrawals").insert({
             user_id: user.id,
-            withdrawal_type: metalType,
-            grams: gramsNum,
-            amount: calculatedAmount, // Keep amount for backward compatibility
-            notes: notes || withdrawalMethod,
-            status: 'pending'
-        });
+            withdrawal_type: 'cash',
+            gross_amount: amountNum,
+            net_amount: amountNum, // Will be calculated by admin
+            fee_amount: 0,
+            notes: fullNotes,
+            idempotency_key: crypto.randomUUID(),
+        } as any);
 
         setIsLoading(false);
 
@@ -129,9 +136,9 @@ const NewWithdrawalDialog = ({ open, onOpenChange, onSuccess }: NewWithdrawalDia
                 title: "تم إرسال الطلب",
                 description: "سيتم مراجعة طلبك في أقرب وقت",
             });
-            setGrams("");
-            setMetalType("gold");
+            setAmount("");
             setWithdrawalMethod("");
+            setWalletNumber("");
             setNotes("");
             onOpenChange(false);
             onSuccess();
@@ -142,100 +149,121 @@ const NewWithdrawalDialog = ({ open, onOpenChange, onSuccess }: NewWithdrawalDia
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="bg-card border-border/50">
                 <DialogHeader>
-                    <DialogTitle className="text-xl text-gold-gradient">طلب سحب (بيع المعادن)</DialogTitle>
+                    <DialogTitle className="text-xl text-gold-gradient flex items-center gap-2">
+                        <Wallet className="h-5 w-5" />
+                        سحب نقدية من المحفظة
+                    </DialogTitle>
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-4 mt-4">
-                    {/* Metal Type Selection */}
-                    <div className="space-y-2">
-                        <Label htmlFor="metalType">نوع المعدن *</Label>
-                        <Select value={metalType} onValueChange={(value: "gold" | "silver") => {
-                            setMetalType(value);
-                            setGrams(""); // Reset grams when metal type changes
-                        }}>
-                            <SelectTrigger className="bg-secondary/30 border-border/50">
-                                <SelectValue placeholder="اختر نوع المعدن" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="gold">ذهب</SelectItem>
-                                <SelectItem value="silver">فضة</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-
-                    {/* Available Grams Display */}
-                    <div className="bg-muted/50 p-3 rounded-lg">
+                    {/* Wallet Balance Display */}
+                    <div className="bg-muted/50 p-4 rounded-lg">
                         <div className="flex items-center justify-between">
-                            <span className="text-sm text-muted-foreground">المتاح لديك:</span>
-                            {loadingAvailable ? (
+                            <span className="text-sm text-muted-foreground">رصيد المحفظة المتاح:</span>
+                            {loadingBalance ? (
                                 <Loader2 className="h-4 w-4 animate-spin" />
                             ) : (
-                                <span className="text-lg font-bold text-gold-gradient">
-                                    {metalType === "gold" 
-                                        ? `${availableGrams.gold.toFixed(4)} جرام ذهب`
-                                        : `${availableGrams.silver.toFixed(4)} جرام فضة`}
+                                <span className="text-xl font-bold text-gold-gradient">
+                                    {walletBalance.toLocaleString("ar-EG")} ج.م
                                 </span>
                             )}
                         </div>
                     </div>
 
-                    {/* Grams Input */}
+                    {/* Amount Input */}
                     <div className="space-y-2">
-                        <Label htmlFor="grams">عدد الجرامات المراد سحبها *</Label>
+                        <Label htmlFor="amount">المبلغ المراد سحبه (ج.م) *</Label>
                         <Input
-                            id="grams"
+                            id="amount"
                             type="number"
-                            step="0.0001"
-                            min="0.0001"
-                            max={metalType === "gold" ? availableGrams.gold : availableGrams.silver}
-                            placeholder="0.0000"
-                            value={grams}
-                            onChange={(e) => setGrams(e.target.value)}
+                            min="1"
+                            max={walletBalance}
+                            placeholder="أدخل المبلغ"
+                            value={amount}
+                            onChange={(e) => setAmount(e.target.value)}
                             className="bg-secondary/30 border-border/50"
                             dir="ltr"
                         />
-                        <p className="text-xs text-muted-foreground">
-                            الحد الأقصى: {metalType === "gold" ? availableGrams.gold.toFixed(4) : availableGrams.silver.toFixed(4)} جرام
-                        </p>
                     </div>
 
                     {/* Withdrawal Method */}
                     <div className="space-y-2">
-                        <Label htmlFor="withdrawalMethod">طريقة الاستلام *</Label>
+                        <Label htmlFor="withdrawalMethod">طريقة السحب *</Label>
                         <Select value={withdrawalMethod} onValueChange={setWithdrawalMethod}>
                             <SelectTrigger className="bg-secondary/30 border-border/50">
-                                <SelectValue placeholder="اختر طريقة الاستلام" />
+                                <SelectValue placeholder="اختر طريقة السحب" />
                             </SelectTrigger>
                             <SelectContent>
+                                <SelectItem value="vodafone_cash">فودافون كاش</SelectItem>
+                                <SelectItem value="orange_cash">أورنج كاش</SelectItem>
+                                <SelectItem value="etisalat_cash">اتصالات كاش</SelectItem>
+                                <SelectItem value="instapay">انستا باي</SelectItem>
                                 <SelectItem value="bank_transfer">تحويل بنكي</SelectItem>
-                                <SelectItem value="wallet">محفظة إلكترونية</SelectItem>
-                                <SelectItem value="cash">استلام نقدي</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
 
-                    {/* Notes */}
+                    {/* Wallet/Account Number - Show based on method */}
+                    {(withdrawalMethod === "vodafone_cash" || withdrawalMethod === "orange_cash" ||
+                        withdrawalMethod === "etisalat_cash" || withdrawalMethod === "instapay") && (
+                            <div className="space-y-2">
+                                <Label htmlFor="walletNumber">
+                                    {withdrawalMethod === "instapay" ? "رقم حساب انستا باي *" : "رقم المحفظة *"}
+                                </Label>
+                                <Input
+                                    id="walletNumber"
+                                    placeholder={withdrawalMethod === "instapay" ? "أدخل رقم حساب انستا باي" : "أدخل رقم المحفظة"}
+                                    value={walletNumber}
+                                    onChange={(e) => setWalletNumber(e.target.value)}
+                                    className="bg-secondary/30 border-border/50"
+                                    dir="ltr"
+                                />
+                            </div>
+                        )}
+
+                    {/* Bank Account - Show for bank transfer */}
+                    {withdrawalMethod === "bank_transfer" && (
+                        <div className="space-y-2">
+                            <Label htmlFor="walletNumber">رقم الحساب البنكي / IBAN *</Label>
+                            <Input
+                                id="walletNumber"
+                                placeholder="أدخل رقم الحساب البنكي"
+                                value={walletNumber}
+                                onChange={(e) => setWalletNumber(e.target.value)}
+                                className="bg-secondary/30 border-border/50"
+                                dir="ltr"
+                            />
+                        </div>
+                    )}
+
+                    {/* Additional Notes */}
                     <div className="space-y-2">
-                        <Label htmlFor="notes">ملاحظات (مثل رقم المحفظة أو الحساب)</Label>
+                        <Label htmlFor="notes">ملاحظات إضافية</Label>
                         <Input
                             id="notes"
-                            placeholder="تفاصيل إضافية..."
+                            placeholder="ملاحظات اختيارية..."
                             value={notes}
                             onChange={(e) => setNotes(e.target.value)}
                             className="bg-secondary/30 border-border/50"
                         />
                     </div>
 
-                    {/* Warning if insufficient grams */}
-                    {grams && parseFloat(grams) > (metalType === "gold" ? availableGrams.gold : availableGrams.silver) && (
+                    {/* Warning if insufficient balance */}
+                    {amount && parseFloat(amount) > walletBalance && (
                         <div className="flex items-center gap-2 p-3 bg-destructive/10 border border-destructive/20 rounded-lg text-destructive text-sm">
                             <AlertCircle className="h-4 w-4" />
-                            <span>عدد الجرامات المطلوبة يتجاوز المتاح لديك</span>
+                            <span>المبلغ المطلوب يتجاوز رصيد المحفظة المتاح</span>
                         </div>
                     )}
+
+                    <div className="bg-muted/50 p-3 rounded-lg text-sm text-muted-foreground">
+                        <p>• سيتم مراجعة طلبك خلال 24-48 ساعة</p>
+                        <p>• سيتم التحويل إلى الحساب/المحفظة المحددة</p>
+                    </div>
+
                     <Button
                         type="submit"
                         className="w-full bg-gold-gradient hover:bg-gold-gradient-hover text-primary-foreground"
-                        disabled={isLoading}
+                        disabled={isLoading || walletBalance === 0}
                     >
                         {isLoading ? (
                             <>
@@ -243,7 +271,7 @@ const NewWithdrawalDialog = ({ open, onOpenChange, onSuccess }: NewWithdrawalDia
                                 جاري الإرسال...
                             </>
                         ) : (
-                            "إرسال الطلب"
+                            "إرسال طلب السحب"
                         )}
                     </Button>
                 </form>
