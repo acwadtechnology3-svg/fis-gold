@@ -23,57 +23,24 @@ const Index = () => {
     const hashParams = new URLSearchParams(window.location.hash.substring(1));
     const error = params.get('error') || hashParams.get('error');
     const errorDescription = params.get('error_description') || hashParams.get('error_description');
-    
+
     if (error) {
       const errorMsg = decodeURIComponent(errorDescription || error || 'Unknown error');
       toast({
         variant: "destructive",
         title: "خطأ في المصادقة",
-        description: errorMsg.includes('Unable to exchange external code') 
+        description: errorMsg.includes('Unable to exchange external code')
           ? "فشل في تبادل رمز المصادقة. يرجى التحقق من إعدادات Google OAuth في Supabase."
           : errorMsg,
       });
-      
+
       // Clean up URL after showing error
       const cleanUrl = window.location.pathname;
       window.history.replaceState({}, document.title, cleanUrl);
     }
   }, [toast]);
 
-  useEffect(() => {
-    const checkProfileAndRedirect = async () => {
-      if (!user || loading) return;
 
-      try {
-        const { data: profile, error } = await supabase
-          .from("profiles")
-          .select("is_active, phone, first_name, last_name")
-          .eq("id", user.id)
-          .single();
-
-        if (error && error.code !== "PGRST116") {
-          console.error("Error checking profile:", error);
-          return;
-        }
-
-        const isComplete = profile?.phone && profile?.first_name && profile?.last_name;
-
-        if (!isComplete) {
-          // New User / Incomplete -> Complete Profile
-          navigate("/complete-profile");
-        } else {
-          // Existing User -> Dashboard
-          navigate("/dashboard");
-        }
-      } catch (error) {
-        console.error("Error in profile check:", error);
-      }
-    };
-
-    if (user && !loading) {
-      checkProfileAndRedirect();
-    }
-  }, [user, loading, navigate]);
 
   return (
     <div className="min-h-screen relative">

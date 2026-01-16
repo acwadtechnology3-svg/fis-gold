@@ -40,11 +40,19 @@ const PartnersCarousel = () => {
     // If there are no partners or not enough for a carousel, we could either hide it or duplicate the few we have more times.
     // For now, let's just duplicate whatever we have enough to fill some space or make it look like a carousel.
     // If no partners, fallback to empty array/null
-    if (!loading && partners.length === 0) {
+    if (loading) {
         return null;
     }
 
-    // Ensure we have enough items to scroll smoothly
+    if (partners.length === 0) {
+        return (
+            <section className="py-12 bg-white text-center">
+                <div className="container mx-auto">
+                    <p className="text-muted-foreground">لا يوجد شركاء حالياً</p>
+                </div>
+            </section>
+        );
+    }// Ensure we have enough items to scroll smoothly
     const duplicatedPartners = partners.length > 0 ? [...partners, ...partners, ...partners, ...partners] : [];
 
     return (

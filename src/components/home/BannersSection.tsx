@@ -74,8 +74,18 @@ const BannersSection = () => {
     setCurrentBanner((prev) => (prev - 1 + banners.length) % banners.length);
   };
 
-  if (loading || banners.length === 0) {
-    return null; // Or show a loader/placeholder
+  if (loading) {
+    return null; // Don't show anything while loading
+  }
+
+  if (banners.length === 0) {
+    return (
+      <section className="py-16 px-4 bg-muted/50 text-center">
+        <div className="container mx-auto">
+          <h3 className="text-xl font-semibold text-muted-foreground">لا توجد بنرات حالياً</h3>
+        </div>
+      </section>
+    );
   }
 
   const banner = banners[currentBanner];

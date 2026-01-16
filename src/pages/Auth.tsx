@@ -81,25 +81,25 @@ const Auth = () => {
     const params = new URLSearchParams(window.location.search);
     const error = params.get('error');
     const errorDescription = params.get('error_description');
-    
+
     // Also check hash for error (Supabase sometimes returns errors in hash)
     const hashParams = new URLSearchParams(window.location.hash.substring(1));
     const hashError = hashParams.get('error');
     const hashErrorDesc = hashParams.get('error_description');
-    
+
     // Clean up URL after processing errors
     const hasError = error || hashError;
-    
+
     if (hasError) {
       const errorMsg = decodeURIComponent(errorDescription || hashErrorDesc || error || hashError || 'Unknown error');
       toast({
         variant: "destructive",
         title: "خطأ في المصادقة",
-        description: errorMsg.includes('Unable to exchange external code') 
+        description: errorMsg.includes('Unable to exchange external code')
           ? "فشل في تبادل رمز المصادقة. يرجى التحقق من إعدادات Google OAuth في Supabase."
           : errorMsg,
       });
-      
+
       // Clean up URL parameters after showing error
       const cleanUrl = window.location.pathname;
       window.history.replaceState({}, document.title, cleanUrl);
@@ -131,8 +131,8 @@ const Auth = () => {
           // Profile is not complete, redirect to complete-profile
           navigate("/complete-profile");
         } else if (profile?.is_active) {
-          // Profile is complete and active, redirect to dashboard
-          navigate("/dashboard");
+          // Profile is complete and active, redirect to home page
+          navigate("/");
         } else {
           // Profile is complete but not active (pending verification)
           navigate("/complete-profile");
@@ -175,7 +175,7 @@ const Auth = () => {
         title: "تم تسجيل الدخول بنجاح",
         description: "مرحباً بك في FIS Gold",
       });
-      navigate("/dashboard");
+      navigate("/");
     }
   };
 
