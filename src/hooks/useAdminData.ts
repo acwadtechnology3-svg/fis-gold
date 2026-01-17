@@ -14,6 +14,11 @@ export interface UserWithProfile {
   kyc_status?: string;
   available_balance?: number;
   locked_balance?: number;
+  avatar_url?: string | null;
+  id_front_url?: string | null;
+  id_back_url?: string | null;
+  wallet_type?: string | null;
+  wallet_number?: string | null;
 }
 
 export interface AdminDeposit {
@@ -130,6 +135,7 @@ export const useAdminData = () => {
 
     const usersData: UserWithProfile[] = profiles.map((profile) => {
       const wallet = walletsByUserId.get(profile.id);
+      const p = profile as any;
       return {
         id: profile.id,
         email: profile.email || "",
@@ -138,9 +144,14 @@ export const useAdminData = () => {
         phone: profile.phone,
         is_active: profile.is_active ?? true,
         roles: rolesByUserId.get(profile.id) || [],
-        kyc_status: (profile as any).kyc_status || "pending",
+        kyc_status: p.kyc_status || "pending",
         available_balance: wallet?.available || 0,
         locked_balance: wallet?.locked || 0,
+        avatar_url: p.avatar_url || null,
+        id_front_url: p.id_front_url || null,
+        id_back_url: p.id_back_url || null,
+        wallet_type: p.wallet_type || null,
+        wallet_number: p.wallet_number || null,
       };
     });
 

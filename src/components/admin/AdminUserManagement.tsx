@@ -45,6 +45,7 @@ import {
   Minus,
   DollarSign,
   Lock,
+  ImageIcon,
 } from "lucide-react";
 import { useActivityLog } from "@/hooks/useActivityLog";
 
@@ -370,8 +371,9 @@ export const AdminUserManagement = ({
           </DialogHeader>
           {selectedUser && (
             <Tabs defaultValue="info" className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
+              <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="info">المعلومات الأساسية</TabsTrigger>
+                <TabsTrigger value="documents">المستندات</TabsTrigger>
                 <TabsTrigger value="portfolio">المحفظة الاستثمارية</TabsTrigger>
               </TabsList>
               <TabsContent value="info" className="space-y-4 py-4">
@@ -434,6 +436,91 @@ export const AdminUserManagement = ({
                     </div>
                   </div>
                 </div>
+              </TabsContent>
+
+              <TabsContent value="documents" className="py-4 space-y-4">
+                <h4 className="font-semibold flex items-center gap-2">
+                  <ImageIcon className="w-4 h-4" />
+                  صور المستندات
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {/* Profile Image */}
+                  <div className="space-y-2">
+                    <Label className="text-muted-foreground">صورة الملف الشخصي</Label>
+                    <div className="border rounded-lg p-2 bg-muted/30">
+                      {selectedUser.avatar_url ? (
+                        <a href={selectedUser.avatar_url} target="_blank" rel="noopener noreferrer">
+                          <img
+                            src={selectedUser.avatar_url}
+                            alt="صورة الملف الشخصي"
+                            className="w-full h-32 object-cover rounded-lg hover:opacity-80 transition-opacity cursor-pointer"
+                          />
+                        </a>
+                      ) : (
+                        <div className="w-full h-32 bg-muted flex items-center justify-center rounded-lg">
+                          <span className="text-muted-foreground text-sm">لا توجد صورة</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* ID Front */}
+                  <div className="space-y-2">
+                    <Label className="text-muted-foreground">الهوية - الوجه الأمامي</Label>
+                    <div className="border rounded-lg p-2 bg-muted/30">
+                      {selectedUser.id_front_url ? (
+                        <a href={selectedUser.id_front_url} target="_blank" rel="noopener noreferrer">
+                          <img
+                            src={selectedUser.id_front_url}
+                            alt="الهوية الأمامية"
+                            className="w-full h-32 object-cover rounded-lg hover:opacity-80 transition-opacity cursor-pointer"
+                          />
+                        </a>
+                      ) : (
+                        <div className="w-full h-32 bg-muted flex items-center justify-center rounded-lg">
+                          <span className="text-muted-foreground text-sm">لا توجد صورة</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* ID Back */}
+                  <div className="space-y-2">
+                    <Label className="text-muted-foreground">الهوية - الوجه الخلفي</Label>
+                    <div className="border rounded-lg p-2 bg-muted/30">
+                      {selectedUser.id_back_url ? (
+                        <a href={selectedUser.id_back_url} target="_blank" rel="noopener noreferrer">
+                          <img
+                            src={selectedUser.id_back_url}
+                            alt="الهوية الخلفية"
+                            className="w-full h-32 object-cover rounded-lg hover:opacity-80 transition-opacity cursor-pointer"
+                          />
+                        </a>
+                      ) : (
+                        <div className="w-full h-32 bg-muted flex items-center justify-center rounded-lg">
+                          <span className="text-muted-foreground text-sm">لا توجد صورة</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Wallet Info */}
+                {(selectedUser.wallet_type || selectedUser.wallet_number) && (
+                  <div className="border-t pt-4 mt-4">
+                    <h4 className="font-semibold mb-3">معلومات المحفظة الإلكترونية</h4>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <Label className="text-muted-foreground">نوع المحفظة</Label>
+                        <p className="font-semibold">{selectedUser.wallet_type || "غير محدد"}</p>
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-muted-foreground">رقم المحفظة</Label>
+                        <p className="font-semibold font-mono" dir="ltr">{selectedUser.wallet_number || "غير محدد"}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </TabsContent>
 
               <TabsContent value="portfolio" className="py-4">
