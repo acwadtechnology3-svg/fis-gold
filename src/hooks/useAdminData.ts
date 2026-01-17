@@ -426,7 +426,7 @@ export const useAdminData = () => {
 
   const updateUserProfile = async (
     userId: string,
-    updates: { full_name?: string; phone?: string; is_active?: boolean }
+    updates: { full_name?: string; phone?: string; is_active?: boolean; kyc_status?: string }
   ) => {
     const { error } = await supabase
       .from("profiles")

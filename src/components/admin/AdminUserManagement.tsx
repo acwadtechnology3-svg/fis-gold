@@ -52,7 +52,7 @@ interface AdminUserManagementProps {
   users: UserWithProfile[];
   onUpdateUser: (
     userId: string,
-    updates: { full_name?: string; phone?: string; is_active?: boolean }
+    updates: { full_name?: string; phone?: string; is_active?: boolean; kyc_status?: string }
   ) => Promise<boolean>;
   onGrantRole: (userId: string, role: "admin" | "moderator" | "user") => Promise<boolean>;
   onRevokeRole: (userId: string, role: "admin" | "moderator" | "user") => Promise<boolean>;
@@ -87,6 +87,7 @@ export const AdminUserManagement = ({
     full_name: "",
     phone: "",
     is_active: true,
+    kyc_status: "pending",
   });
 
   const [walletForm, setWalletForm] = useState({
@@ -108,6 +109,7 @@ export const AdminUserManagement = ({
       full_name: user.full_name || "",
       phone: user.phone || "",
       is_active: user.is_active ?? true,
+      kyc_status: user.kyc_status || "pending",
     });
     setEditDialogOpen(true);
   };
@@ -669,6 +671,24 @@ export const AdminUserManagement = ({
                 </SelectContent>
               </Select>
             </div>
+            <div className="space-y-2">
+              <Label htmlFor="kyc_status">حالة التحقق (KYC)</Label>
+              <Select
+                value={editForm.kyc_status}
+                onValueChange={(value) =>
+                  setEditForm({ ...editForm, kyc_status: value })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pending">قيد الانتظار</SelectItem>
+                  <SelectItem value="verified">موثق</SelectItem>
+                  <SelectItem value="rejected">مرفوض</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
             {selectedUser && (
               <div className="space-y-2">
                 <Label>الصلاحيات</Label>
@@ -710,7 +730,7 @@ export const AdminUserManagement = ({
             </Button>
           </DialogFooter>
         </DialogContent>
-      </Dialog>
+      </Dialog >
     </>
   );
 };
