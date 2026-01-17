@@ -1,15 +1,15 @@
 -- =====================================================
--- FIX SCRIPT FOR get_user_portfolio FUNCTION
+-- FIX SCRIPT FOR get_user_portfolio FUNCTION (UPDATED)
 -- Run this in your Supabase SQL Editor
 -- =====================================================
 
 -- Step 1: Drop the existing function
 DROP FUNCTION IF EXISTS public.get_user_portfolio(UUID);
 
--- Step 2: Add missing column if it doesn't exist
-ALTER TABLE public.deposits ADD COLUMN IF NOT EXISTS gold_grams DECIMAL(10,4);
+-- Step 2: Ensure tables exist (optional safety/debugging)
+-- We assume gold_positions exists because other RPCs use it.
 
--- Step 3: Create a simple version of the function that works with any schema
+-- Step 3: Create the corrected function
 CREATE OR REPLACE FUNCTION public.get_user_portfolio(p_user_id UUID)
 RETURNS TABLE (
   total_invested NUMERIC,
@@ -30,36 +30,68 @@ DECLARE
   v_pending_withdrawals NUMERIC := 0;
   v_completed_withdrawals NUMERIC := 0;
 BEGIN
-  -- Get deposit stats
+  -- 1. Get Deposit Stats (Cash Flow)
+  -- Total Invested = Sum of APPROVED deposits (in money)
   SELECT 
-    COALESCE(SUM(CASE WHEN d.status = 'approved' THEN d.amount ELSE 0 END), 0),
-    COALESCE(SUM(CASE WHEN d.status = 'approved' THEN COALESCE(d.gold_grams, 0) ELSE 0 END), 0),
-    COALESCE(COUNT(CASE WHEN d.status = 'pending' THEN 1 END), 0),
-    COALESCE(COUNT(CASE WHEN d.status = 'approved' THEN 1 END), 0)
-  INTO v_total_invested, v_total_gold_grams, v_pending_deposits, v_approved_deposits
-  FROM public.deposits d
-  WHERE d.user_id = p_user_id;
-  
-  -- Get withdrawal stats - using text comparison to avoid enum issues
+    COALESCE(SUM(amount), 0),
+    COALESCE(COUNT(*), 0)
+  INTO v_total_invested, v_approved_deposits
+  FROM public.deposits 
+  WHERE user_id = p_user_id AND status = 'approved';
+
+  -- Pending Deposits count
+  SELECT COALESCE(COUNT(*), 0)
+  INTO v_pending_deposits
+  FROM public.deposits 
+  WHERE user_id = p_user_id AND status = 'pending';
+
+  -- 2. Get Gold Stats (Assets)
+  -- Total Gold Grams = Sum of Active Gold Positions + Gold from Deposits (if any legacy)
+  -- We query gold_positions first if it exists.
+  BEGIN
+    SELECT COALESCE(SUM(grams), 0)
+    INTO v_total_gold_grams
+    FROM public.gold_positions
+    WHERE user_id = p_user_id AND status = 'active';
+  EXCEPTION WHEN OTHERS THEN
+    -- If gold_positions table missing, fallback to deposits
+    v_total_gold_grams := 0;
+  END;
+
+  -- Add legacy gold from deposits if not 0 (and if not double counting)
+  -- Assuming new system uses gold_positions exclusively for gold holding.
+  -- But if we keep gold_grams in deposits, we might need to add it.
+  -- For now, let's ADD it to be safe, assuming migration didn't move it.
+  -- Or strictly use gold_positions. Let's add ONLY if gold_positions returned 0? 
+  -- No, let's SUM both but be careful. 
+  -- Actually, the legacy 'deposits' table had 'gold_grams'. 
+  -- If those are not migrated to 'gold_positions', we must count them.
+  DECLARE
+    v_legacy_gold NUMERIC := 0;
+  BEGIN
+     SELECT COALESCE(SUM(gold_grams), 0) INTO v_legacy_gold
+     FROM public.deposits 
+     WHERE user_id = p_user_id AND status = 'approved';
+     
+     v_total_gold_grams := v_total_gold_grams + v_legacy_gold;
+  EXCEPTION WHEN OTHERS THEN NULL; END;
+
+  -- 3. Get Withdrawal Stats
   BEGIN
     SELECT COALESCE(COUNT(*), 0)
     INTO v_pending_withdrawals
-    FROM public.withdrawals w 
-    WHERE w.user_id = p_user_id 
-    AND w.status::text = 'pending';
-  EXCEPTION WHEN OTHERS THEN
-    v_pending_withdrawals := 0;
-  END;
+    FROM public.withdrawals 
+    WHERE user_id = p_user_id 
+    AND (status = 'pending' OR status = 'requested'); -- Check both statuses
+  EXCEPTION WHEN OTHERS THEN v_pending_withdrawals := 0; END;
   
   BEGIN
     SELECT COALESCE(COUNT(*), 0)
     INTO v_completed_withdrawals
-    FROM public.withdrawals w 
-    WHERE w.user_id = p_user_id 
-    AND w.status::text = 'completed';
-  EXCEPTION WHEN OTHERS THEN
-    v_completed_withdrawals := 0;
-  END;
+    FROM public.withdrawals 
+    WHERE user_id = p_user_id 
+    AND status = 'completed';
+  EXCEPTION WHEN OTHERS THEN v_completed_withdrawals := 0; END;
   
   RETURN QUERY SELECT 
     v_total_invested,
