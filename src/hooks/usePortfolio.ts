@@ -29,6 +29,7 @@ export interface Withdrawal {
   notes: string | null;
   created_at: string;
   processed_at: string | null;
+  proof_image: string | null;
 }
 
 export interface PortfolioSummary {
@@ -60,7 +61,7 @@ export const usePortfolio = () => {
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      return data as Deposit[];
+      return data as unknown as Deposit[];
     },
     enabled: !!user,
     staleTime: 60 * 1000, // Fresh for 1 minute
@@ -78,7 +79,7 @@ export const usePortfolio = () => {
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      return data as Withdrawal[];
+      return data as unknown as Withdrawal[];
     },
     enabled: !!user,
     staleTime: 60 * 1000, // Fresh for 1 minute

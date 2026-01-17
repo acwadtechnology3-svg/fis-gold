@@ -70,6 +70,7 @@ const WithdrawalsTable = ({ withdrawals, isLoading }: WithdrawalsTableProps) => 
                   <TableHead>الصافي</TableHead>
                   <TableHead>الحالة</TableHead>
                   <TableHead>التاريخ</TableHead>
+                  <TableHead>الإيصال</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -96,6 +97,21 @@ const WithdrawalsTable = ({ withdrawals, isLoading }: WithdrawalsTableProps) => 
                     </TableCell>
                     <TableCell className="text-muted-foreground">
                       {format(new Date(withdrawal.created_at), "dd MMM yyyy", { locale: ar })}
+                    </TableCell>
+                    <TableCell>
+                      {withdrawal.proof_image ? (
+                        <a
+                          href={withdrawal.proof_image}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1 text-primary hover:text-primary/80 text-sm font-medium"
+                        >
+                          <ArrowDownCircle className="h-4 w-4" />
+                          عرض
+                        </a>
+                      ) : (
+                        <span className="text-muted-foreground">-</span>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}
