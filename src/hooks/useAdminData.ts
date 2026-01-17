@@ -11,6 +11,9 @@ export interface UserWithProfile {
   phone: string | null;
   is_active?: boolean;
   roles?: string[];
+  kyc_status?: string;
+  available_balance?: number;
+  locked_balance?: number;
 }
 
 export interface AdminDeposit {
@@ -87,15 +90,17 @@ export const useAdminData = () => {
   };
 
   const fetchUsers = async () => {
-    const userIds: string[] = [];
-    const [profilesResult, rolesResult] = await Promise.all([
+    const [profilesResult, rolesResult, walletsResult] = await Promise.all([
       supabase
         .from("profiles")
         .select("*")
         .order("created_at", { ascending: false }),
       supabase
         .from("user_roles")
-        .select("user_id, role")
+        .select("user_id, role"),
+      (supabase
+        .from("wallet_accounts" as any) as any)
+        .select("user_id, available_balance, locked_balance")
     ]);
 
     if (profilesResult.error) {
@@ -105,6 +110,7 @@ export const useAdminData = () => {
 
     const profiles = profilesResult.data || [];
     const userRoles = rolesResult.data || [];
+    const wallets = walletsResult.data || [];
 
     const rolesByUserId = new Map<string, string[]>();
     userRoles.forEach((ur) => {
@@ -114,15 +120,29 @@ export const useAdminData = () => {
       rolesByUserId.get(ur.user_id)!.push(ur.role);
     });
 
-    const usersData: UserWithProfile[] = profiles.map((profile) => ({
-      id: profile.id,
-      email: profile.email || "",
-      created_at: profile.created_at,
-      full_name: profile.full_name,
-      phone: profile.phone,
-      is_active: profile.is_active ?? true,
-      roles: rolesByUserId.get(profile.id) || [],
-    }));
+    const walletsByUserId = new Map<string, { available: number; locked: number }>();
+    wallets.forEach((w: any) => {
+      walletsByUserId.set(w.user_id, {
+        available: w.available_balance || 0,
+        locked: w.locked_balance || 0,
+      });
+    });
+
+    const usersData: UserWithProfile[] = profiles.map((profile) => {
+      const wallet = walletsByUserId.get(profile.id);
+      return {
+        id: profile.id,
+        email: profile.email || "",
+        created_at: profile.created_at,
+        full_name: profile.full_name,
+        phone: profile.phone,
+        is_active: profile.is_active ?? true,
+        roles: rolesByUserId.get(profile.id) || [],
+        kyc_status: (profile as any).kyc_status || "pending",
+        available_balance: wallet?.available || 0,
+        locked_balance: wallet?.locked || 0,
+      };
+    });
 
     setUsers(usersData);
   };
@@ -224,7 +244,7 @@ export const useAdminData = () => {
     const profiles = profilesResult.data || [];
     const profilesMap = new Map(profiles.map(p => [p.id, p]));
 
-    const buysWithProfiles = buys.map(buy => ({
+    const buysWithProfiles = buys.map((buy: any) => ({
       ...buy,
       profiles: profilesMap.get(buy.user_id) || { full_name: 'مستخدم غير معروف', email: '' }
     }));
@@ -309,7 +329,7 @@ export const useAdminData = () => {
   const approveWithdrawal = async (withdrawalId: string, proofImageUrl?: string) => {
     const withdrawal = withdrawals.find((w) => w.id === withdrawalId);
 
-    const { data: success, error } = await supabase.rpc('approve_withdrawal_request', {
+    const { data: success, error } = await supabase.rpc('approve_withdrawal_request' as any, {
       p_withdrawal_id: withdrawalId,
       p_admin_id: user?.id
     });
@@ -375,7 +395,7 @@ export const useAdminData = () => {
   };
 
   const approveBuyRequest = async (positionId: string) => {
-    const { data: success, error } = await supabase.rpc('approve_buy_request', {
+    const { data: success, error } = await supabase.rpc('approve_buy_request' as any, {
       p_position_id: positionId,
       p_admin_id: user?.id
     });
@@ -468,6 +488,49 @@ export const useAdminData = () => {
     return data?.[0] || null;
   };
 
+  const getUserWallet = async (userId: string) => {
+    const { data, error } = await supabase.rpc("admin_get_user_wallet" as any, {
+      p_user_id: userId,
+    });
+
+    if (error) {
+      console.error("Error fetching user wallet:", error);
+      return null;
+    }
+
+    return data?.[0] || null;
+  };
+
+  const adjustUserWallet = async (
+    userId: string,
+    amount: number,
+    adjustmentType: "credit" | "debit",
+    reason: string
+  ) => {
+    const { data, error } = await supabase.rpc("admin_adjust_wallet" as any, {
+      p_user_id: userId,
+      p_amount: amount,
+      p_adjustment_type: adjustmentType,
+      p_reason: reason,
+    });
+
+    if (error) {
+      console.error("Error adjusting wallet:", error);
+      toast.error("حدث خطأ في تعديل المحفظة");
+      return { success: false, message: error.message, new_balance: null };
+    }
+
+    const result = (data as any)?.[0];
+    if (result?.success) {
+      toast.success(result.message);
+      fetchUsers(); // Refresh user data
+    } else {
+      toast.error(result?.message || "حدث خطأ غير معروف");
+    }
+
+    return result;
+  };
+
   useEffect(() => {
     checkAdminRole();
   }, [user]);
@@ -501,6 +564,8 @@ export const useAdminData = () => {
     grantUserRole,
     revokeUserRole,
     getUserPortfolio,
+    getUserWallet,
+    adjustUserWallet,
 
     // Refresh
     refetchDeposits: fetchDeposits,

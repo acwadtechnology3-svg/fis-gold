@@ -204,11 +204,11 @@ const NewDepositDialog = ({ onSuccess, open: controlledOpen, onOpenChange: setCo
     }
 
     const amountNum = parseFloat(amount);
-    if (isNaN(amountNum) || amountNum < 2000) {
+    if (isNaN(amountNum) || amountNum < 100) {
       toast({
         variant: "destructive",
         title: "خطأ",
-        description: "الحد الأدنى للإيداع هو 2,000 ج.م",
+        description: "الحد الأدنى للإيداع هو 100 ج.م",
       });
       return;
     }
@@ -360,8 +360,8 @@ const NewDepositDialog = ({ onSuccess, open: controlledOpen, onOpenChange: setCo
             <Input
               id="amount"
               type="number"
-              min="2000"
-              placeholder="الحد الأدنى 2,000 ج.م"
+              min="100"
+              placeholder="الحد الأدنى 100 ج.م"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
               className="bg-secondary/30 border-border/50"

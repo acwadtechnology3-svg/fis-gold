@@ -115,7 +115,7 @@ export const AdminSettings = () => {
               id="min_deposit"
               type="number"
               step="100"
-              defaultValue={getSetting("min_deposit_amount") || 2000}
+              defaultValue={getSetting("min_deposit_amount") || 100}
               onBlur={(e) => {
                 const value = parseFloat(e.target.value);
                 if (!isNaN(value) && value > 0) {

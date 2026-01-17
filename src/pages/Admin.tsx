@@ -42,6 +42,7 @@ const Admin = () => {
     grantUserRole,
     revokeUserRole,
     getUserPortfolio,
+    adjustUserWallet,
     pendingBuys,
     approveBuyRequest,
     rejectBuyRequest,
@@ -243,6 +244,7 @@ const Admin = () => {
               onGrantRole={grantUserRole}
               onRevokeRole={revokeUserRole}
               onGetPortfolio={getUserPortfolio}
+              onAdjustWallet={adjustUserWallet}
             />
           </TabsContent>
 
