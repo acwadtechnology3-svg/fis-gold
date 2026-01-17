@@ -21,7 +21,7 @@ import { Loader2, Plus, Minus, Coins } from "lucide-react";
 const Dashboard = () => {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const { deposits, withdrawals, summary, isLoading, refetchAll } = usePortfolio();
+  const { deposits, withdrawals, summary, walletBalance, isLoading, refetchAll } = usePortfolio();
 
   const [termsOpen, setTermsOpen] = useState(false);
   const [depositOpen, setDepositOpen] = useState(false);
@@ -169,7 +169,7 @@ const Dashboard = () => {
 
         {/* Wallet + Metal Prices Row */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          <WalletCard balance={summary?.total_invested ?? 0} isLoading={isLoading} />
+          <WalletCard balance={walletBalance} isLoading={isLoading} />
           <MetalPricesCard />
         </div>
 

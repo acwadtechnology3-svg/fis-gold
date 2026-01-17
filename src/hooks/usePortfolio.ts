@@ -124,15 +124,39 @@ export const usePortfolio = () => {
     gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
   });
 
+  const walletQuery = useQuery({
+    queryKey: ['wallet_balance', user?.id],
+    queryFn: async () => {
+      if (!user) return 0;
+      const { data, error } = await supabase
+        .from("wallet_accounts" as any)
+        .select("available_balance")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (error) {
+        console.error("Wallet balance fetch error:", error);
+        return 0;
+      }
+      return (data as any)?.available_balance ?? 0;
+    },
+    enabled: !!user,
+    // Real-time sensitive, so keep staleTime low or subscribe to changes ideally
+    // For now, rely on refetch queries
+    staleTime: 30 * 1000,
+  });
+
   return {
     deposits: depositsQuery.data ?? [],
     withdrawals: withdrawalsQuery.data ?? [],
     summary: summaryQuery.data,
-    isLoading: depositsQuery.isLoading || withdrawalsQuery.isLoading || summaryQuery.isLoading,
+    walletBalance: walletQuery.data ?? 0,
+    isLoading: depositsQuery.isLoading || withdrawalsQuery.isLoading || summaryQuery.isLoading || walletQuery.isLoading,
     refetchAll: () => {
       depositsQuery.refetch();
       withdrawalsQuery.refetch();
       summaryQuery.refetch();
+      walletQuery.refetch();
     },
   };
 };
