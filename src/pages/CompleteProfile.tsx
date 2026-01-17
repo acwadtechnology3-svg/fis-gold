@@ -44,7 +44,7 @@ const CompleteProfile = () => {
         const { data: profile, error } = await supabase
           .from('profiles')
           .select('is_active, phone, first_name, last_name')
-          .eq('id', user.id)
+          .eq('user_id', user.id)
           .single();
 
         if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned

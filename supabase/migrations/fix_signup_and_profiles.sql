@@ -11,6 +11,7 @@ ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS wallet_number TEXT;
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS id_front_url TEXT;
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS id_back_url TEXT;
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'pending';
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT false;
 
 -- 2. Update the handle_new_user trigger function
 -- This fixes the issue where user_id was being inserted as NULL or incorrect column mapping
