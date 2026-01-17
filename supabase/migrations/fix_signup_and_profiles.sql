@@ -20,13 +20,18 @@ LANGUAGE plpgsql
 SECURITY DEFINER SET search_path = public
 AS $$
 BEGIN
-  INSERT INTO public.profiles (user_id, email, full_name)
-  VALUES (
-    NEW.id, 
-    NEW.email, 
-    COALESCE(NEW.raw_user_meta_data ->> 'full_name', '')
-  )
-  ON CONFLICT (user_id) DO NOTHING; -- Avoid duplicates if trigger fires multiple times
+  BEGIN
+    INSERT INTO public.profiles (user_id, email, full_name)
+    VALUES (
+      NEW.id, 
+      NEW.email, 
+      COALESCE(NEW.raw_user_meta_data ->> 'full_name', '')
+    )
+    ON CONFLICT (user_id) DO NOTHING;
+  EXCEPTION WHEN OTHERS THEN
+    -- Log error to Postgres logs but allow signup to proceed
+    RAISE WARNING 'Error creating profile for user %: %', NEW.id, SQLERRM;
+  END;
   RETURN NEW;
 END;
 $$;
