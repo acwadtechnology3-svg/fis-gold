@@ -19,7 +19,7 @@ const DashboardHeader = () => {
 
   const handleSignOut = async () => {
     await signOut();
-    navigate("/");
+    navigate("/", { replace: true });
   };
 
   return (

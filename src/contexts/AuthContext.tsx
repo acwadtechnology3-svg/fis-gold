@@ -37,7 +37,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       const hashParams = new URLSearchParams(window.location.hash.substring(1));
       const accessToken = hashParams.get('access_token');
       const error = hashParams.get('error');
-      
+
       // If there's an error in the hash, it's already been handled
       if (error) {
         setLoading(false);
@@ -67,7 +67,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           setSession(session);
           setUser(session?.user ?? null);
           setLoading(false);
-          
+
           // Clean up URL hash after successful OAuth
           if (window.location.hash.includes('access_token')) {
             window.history.replaceState(null, '', window.location.pathname + window.location.search);
@@ -139,7 +139,14 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    try {
+      await supabase.auth.signOut();
+    } catch (error) {
+      console.error("Sign out error:", error);
+    } finally {
+      setSession(null);
+      setUser(null);
+    }
   };
 
   return (
